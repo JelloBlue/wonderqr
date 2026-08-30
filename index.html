@@ -7,7 +7,6 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* Global Container Setup */
     body {
       background-color: #f3f4f6;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -25,8 +24,6 @@
       text-align: center;
       box-sizing: border-box;
     }
-
-    /* Headings & Subtitles */
     .biz-title {
       font-size: 1.5rem;
       font-weight: 700;
@@ -38,8 +35,6 @@
       color: #6b7280;
       margin: 0 0 20px 0;
     }
-
-    /* Star Rating UI */
     .star-rating {
       display: inline-flex;
       justify-content: center;
@@ -60,8 +55,6 @@
       color: #fbbf24;
       text-shadow: 0 0 8px rgba(251, 191, 36, 0.35);
     }
-
-    /* Private Feedback Card */
     .feedback-card {
       background: #f9fafb;
       border: 1px solid #e5e7eb;
@@ -115,14 +108,8 @@
       cursor: pointer;
       transition: background-color 0.2s, transform 0.1s;
     }
-    .submit-btn:hover {
-      background-color: #4338ca;
-    }
-    .submit-btn:active {
-      transform: scale(0.98);
-    }
-
-    /* Thank You Box */
+    .submit-btn:hover { background-color: #4338ca; }
+    .submit-btn:active { transform: scale(0.98); }
     .thank-you-box {
       margin-top: 20px;
       padding: 18px;
@@ -132,16 +119,8 @@
       color: #065f46;
       animation: fadeIn 0.25s ease-out;
     }
-    .thank-you-box h3 {
-      margin: 0 0 6px 0;
-      font-size: 1.1rem;
-    }
-    .thank-you-box p {
-      margin: 0;
-      font-size: 0.88rem;
-    }
-
-    /* Social Links Buttons */
+    .thank-you-box h3 { margin: 0 0 6px 0; font-size: 1.1rem; }
+    .thank-you-box p { margin: 0; font-size: 0.88rem; }
     .social-links {
       display: flex;
       justify-content: center;
@@ -162,14 +141,10 @@
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
       transition: transform 0.15s ease, opacity 0.15s ease;
     }
-    .social-btn:hover {
-      transform: translateY(-2px);
-      opacity: 0.95;
-    }
+    .social-btn:hover { transform: translateY(-2px); opacity: 0.95; }
     .btn-wa { background-color: #25d366; }
     .btn-insta { background-color: #e1306c; }
     .btn-yt { background-color: #ff0000; }
-
     .hidden { display: none !important; }
 
     @keyframes fadeIn {
@@ -183,7 +158,6 @@
     <h2 id="biz-name" class="biz-title">Loading Business...</h2>
     <p id="biz-subtitle" class="biz-subtitle">How was your experience with us today?</p>
 
-    <!-- Interactive Star Rating UI -->
     <div id="star-container" class="star-rating">
       <span class="star" data-rating="1">★</span>
       <span class="star" data-rating="2">★</span>
@@ -192,7 +166,6 @@
       <span class="star" data-rating="5">★</span>
     </div>
 
-    <!-- Private Feedback Form (Triggered for Ratings 1 to 3) -->
     <div id="feedback-form-container" class="feedback-card hidden">
       <p class="feedback-prompt">We're sorry to hear that. Please let us know how we can improve:</p>
       <form id="feedback-form">
@@ -215,13 +188,11 @@
       </form>
     </div>
 
-    <!-- Thank You Message -->
     <div id="thank-you-msg" class="thank-you-box hidden">
       <h3>Thank You!</h3>
       <p>Your feedback has been submitted directly to the owner.</p>
     </div>
 
-    <!-- Social Links Block -->
     <div id="social-block" class="social-links hidden">
       <a id="link-wa" href="#" target="_blank" class="social-btn btn-wa hidden">
         <svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
