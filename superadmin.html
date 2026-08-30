@@ -26,7 +26,6 @@
     .btn-cancel { background-color: #6b7280; color: white; }
     .btn-add { background-color: #16a34a; color: white; font-size: 0.85rem; padding: 8px 14px; }
     
-    /* Modal Overlay Styles */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
     .modal-card { background: white; border-radius: 8px; padding: 20px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
     .hidden { display: none !important; }
@@ -126,6 +125,12 @@
         <label class="form-label">Phone Number</label>
         <input type="tel" id="add-phone" class="form-input" placeholder="e.g. +919876543210">
 
+        <label class="form-label">Instagram Profile URL</label>
+        <input type="url" id="add-instagram-url" class="form-input" placeholder="e.g. https://instagram.com/yourbusiness">
+
+        <label class="form-label">YouTube Channel URL</label>
+        <input type="url" id="add-youtube-url" class="form-input" placeholder="e.g. https://youtube.com/@yourchannel">
+
         <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
           <button type="button" id="close-add-modal-btn" class="action-btn btn-cancel">Cancel</button>
           <button type="submit" class="action-btn btn-add">Onboard Business</button>
@@ -156,6 +161,12 @@
         <label class="form-label">Phone Number</label>
         <input type="tel" id="edit-phone" class="form-input">
 
+        <label class="form-label">Instagram Profile URL</label>
+        <input type="url" id="edit-instagram-url" class="form-input" placeholder="e.g. https://instagram.com/yourbusiness">
+
+        <label class="form-label">YouTube Channel URL</label>
+        <input type="url" id="edit-youtube-url" class="form-input" placeholder="e.g. https://youtube.com/@yourchannel">
+
         <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
           <button type="button" id="close-edit-modal-btn" class="action-btn btn-cancel">Cancel</button>
           <button type="submit" class="action-btn btn-edit">Save Changes</button>
@@ -164,7 +175,6 @@
     </div>
   </div>
 
-  <!-- Global Handler to Trigger Edit Modal reliably -->
   <script>
     function openEditModal(bizId) {
       if (!window.loadedBusinesses || window.loadedBusinesses.length === 0) {
@@ -184,6 +194,8 @@
       document.getElementById('edit-google-url').value = biz.google_review_url || '';
       document.getElementById('edit-whatsapp').value = biz.whatsapp_number || '';
       document.getElementById('edit-phone').value = biz.phone_number || '';
+      document.getElementById('edit-instagram-url').value = biz.instagram_url || '';
+      document.getElementById('edit-youtube-url').value = biz.youtube_url || '';
 
       const editModal = document.getElementById('edit-modal');
       if (editModal) {
@@ -192,6 +204,6 @@
       }
     }
   </script>
-  <script type="module" src="js/superadmin.js?v=8"></script>
+  <script type="module" src="js/superadmin.js?v=9"></script>
 </body>
 </html>
