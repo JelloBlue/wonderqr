@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Super Admin - WonderQR</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="css/style.css">
   <style>
     .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
@@ -28,6 +29,10 @@
     /* Overlay Modals */
     .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 100; }
     .modal-card { background: white; border-radius: 8px; padding: 20px; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-sizing: border-box; }
+    
+    .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .badge-active { background-color: #dcfce7; color: #166534; }
+    .badge-inactive { background-color: #fee2e2; color: #991b1b; }
   </style>
 </head>
 <body>
@@ -53,8 +58,24 @@
         </div>
       </div>
 
+      <!-- Sales Reps Overview Table -->
+      <h3>Active Sales Reps & Onboarding Links</h3>
+      <div style="overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Rep Name</th>
+              <th>Status</th>
+              <th>Token</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="reps-tbody"></tbody>
+        </table>
+      </div>
+
       <!-- Onboarded Businesses Overview Header with Add Business Button -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; margin-top: 32px;">
         <h3 style="margin: 0;">Onboarded Businesses</h3>
         <button type="button" id="open-add-modal-btn" class="action-btn btn-add">➕ Add Business</button>
       </div>
@@ -142,6 +163,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/superadmin.js?v=4"></script>
+  <script type="module" src="js/superadmin.js?v=5"></script>
 </body>
 </html>
