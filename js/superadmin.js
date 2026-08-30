@@ -13,8 +13,33 @@ if (adminPass !== MASTER_KEY) {
   document.getElementById('auth-status').innerText = "System Overview";
   document.getElementById('admin-content').classList.remove('hidden');
 
+  let loadedBusinesses = [];
+
+  window.copyText = function(text, label) {
+    navigator.clipboard.writeText(text);
+    alert(`${label} copied to clipboard!`);
+  };
+
+  window.openEditModal = function(bizId) {
+    const biz = loadedBusinesses.find(b => b.id === bizId);
+    if (!biz) return;
+
+    document.getElementById('edit-biz-id').value = biz.id;
+    document.getElementById('edit-biz-name').value = biz.business_name || '';
+    document.getElementById('edit-owner-name').value = biz.owner_name || '';
+    document.getElementById('edit-google-url').value = biz.google_review_url || '';
+    document.getElementById('edit-whatsapp').value = biz.whatsapp_number || '';
+    document.getElementById('edit-phone').value = biz.phone_number || '';
+
+    document.getElementById('edit-modal').classList.remove('hidden');
+  };
+
+  document.getElementById('close-modal-btn').addEventListener('click', () => {
+    document.getElementById('edit-modal').classList.add('hidden');
+  });
+
   async function loadDashboard() {
-    // 1. Fetch Metrics Data
+    // 1. Metrics
     const { count: bizCount } = await supabase.from('businesses').select('*', { count: 'exact', head: true });
     const { count: repsCount } = await supabase.from('sales_reps').select('*', { count: 'exact', head: true });
     const { count: qrCount } = await supabase.from('qr_codes').select('*', { count: 'exact', head: true }).eq('status', 'assigned');
@@ -25,30 +50,75 @@ if (adminPass !== MASTER_KEY) {
     document.getElementById('stat-qr').innerText = qrCount || 0;
     document.getElementById('stat-fb').innerText = fbCount || 0;
 
-    // 2. Fetch Businesses & Sales Reps Info
-    const { data: businesses } = await supabase
+    // 2. Query Businesses + QR Codes + Sales Reps
+    const { data: businesses, error } = await supabase
       .from('businesses')
-      .select('*, qr_codes(code), sales_reps(rep_name)')
+      .select(`
+        *,
+        qr_codes:qr_code_id ( code ),
+        sales_reps:sales_rep_id ( rep_name )
+      `)
       .order('created_at', { ascending: false });
 
+    if (error) {
+      console.error("Error loading dashboard data:", error);
+    }
+
+    loadedBusinesses = businesses || [];
     const tbody = document.getElementById('businesses-tbody');
     tbody.innerHTML = '';
 
-    (businesses || []).forEach(b => {
-      const ownerUrl = `${window.location.origin}/wonderqr/admin.html?token=${b.auth_token}`;
+    const baseUrl = `${window.location.origin}/wonderqr`;
+
+    loadedBusinesses.forEach(b => {
+      const qrCode = b.qr_codes?.code || '';
+      const customerUrl = `${baseUrl}/?qr=${encodeURIComponent(qrCode)}`;
+      const ownerUrl = `${baseUrl}/admin.html?token=${b.auth_token}`;
+      const repName = b.sales_reps?.rep_name || 'Unassigned';
+
       tbody.innerHTML += `
         <tr>
           <td><strong>${b.business_name}</strong></td>
           <td>${b.owner_name}</td>
-          <td><code>${b.qr_codes?.code || 'N/A'}</code></td>
-          <td>${b.sales_reps?.rep_name || 'Unassigned'}</td>
-          <td><button onclick="navigator.clipboard.writeText('${ownerUrl}'); alert('Owner URL copied!');" style="padding: 4px 8px; font-size: 0.75rem;">Copy Link</button></td>
+          <td><code>${qrCode || 'N/A'}</code></td>
+          <td>${repName}</td>
+          <td>
+            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+              <button class="action-btn btn-copy" onclick="copyText('${customerUrl}', 'Customer Review Link')">Copy Customer Link</button>
+              <button class="action-btn btn-copy" style="background-color: #6366f1;" onclick="copyText('${ownerUrl}', 'Owner Dashboard Link')">Copy Owner Link</button>
+              <button class="action-btn btn-edit" onclick="openEditModal('${b.id}')">Edit</button>
+            </div>
+          </td>
         </tr>
       `;
     });
   }
 
-  // 3. Generate New Sales Rep Tokens directly from Dashboard
+  // 3. Handle Business Update Submit
+  document.getElementById('edit-biz-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const bizId = document.getElementById('edit-biz-id').value;
+
+    const updatedData = {
+      business_name: document.getElementById('edit-biz-name').value.trim(),
+      owner_name: document.getElementById('edit-owner-name').value.trim(),
+      google_review_url: document.getElementById('edit-google-url').value.trim(),
+      whatsapp_number: document.getElementById('edit-whatsapp').value.trim() || null,
+      phone_number: document.getElementById('edit-phone').value.trim() || null
+    };
+
+    const { error } = await supabase.from('businesses').update(updatedData).eq('id', bizId);
+
+    if (error) {
+      alert("Failed to update business: " + error.message);
+    } else {
+      alert("Business updated successfully!");
+      document.getElementById('edit-modal').classList.add('hidden');
+      loadDashboard();
+    }
+  });
+
+  // 4. Generate Sales Rep Tokens
   document.getElementById('create-rep-btn').addEventListener('click', async () => {
     const name = document.getElementById('new-rep-name').value.trim();
     if (!name) return alert("Enter rep name");
