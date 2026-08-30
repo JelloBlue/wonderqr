@@ -20,7 +20,6 @@ if (adminPass !== MASTER_KEY) {
     alert(`${label} copied to clipboard!`);
   };
 
-  // Safe Helper Function to attach event listeners
   function setupListener(id, event, callback) {
     const el = document.getElementById(id);
     if (el) el.addEventListener(event, callback);
@@ -65,14 +64,14 @@ if (adminPass !== MASTER_KEY) {
     document.getElementById('stat-qr').innerText = qrCount || 0;
     document.getElementById('stat-fb').innerText = fbCount || 0;
 
-    // 2. Fetch Sales Reps & QR Codes tables in parallel for reliable lookups
-    const { data: salesReps } = await supabase.from('sales_reps').select('id, rep_name');
+    // 2. Fetch Sales Reps
+    const { data: salesReps } = await supabase.from('sales_reps').select('*').order('created_at', { ascending: false });
     const { data: qrCodes } = await supabase.from('qr_codes').select('id, code');
     const { data: businesses, error } = await supabase.from('businesses').select('*').order('created_at', { ascending: false });
 
     if (error) console.error("Error fetching businesses:", error);
 
-    // Populate Sales Rep Select Dropdown
+    // Populate Sales Rep Dropdown for Onboarding Modal
     const repSelect = document.getElementById('add-rep-select');
     if (repSelect) {
       repSelect.innerHTML = '<option value="">Direct Admin (No Rep)</option>';
@@ -81,15 +80,35 @@ if (adminPass !== MASTER_KEY) {
       });
     }
 
-    // Map relationships manually to avoid join failures
+    // Render Sales Reps Table
+    const repsTbody = document.getElementById('reps-tbody');
+    repsTbody.innerHTML = '';
+    const baseUrl = `${window.location.origin}/wonderqr`;
+
+    (salesReps || []).forEach(r => {
+      const repPortalUrl = `${baseUrl}/sales.html?rep_token=${r.access_token}`;
+      const statusClass = r.active !== false ? 'badge-active' : 'badge-inactive';
+      const statusText = r.active !== false ? 'Active' : 'Inactive';
+
+      repsTbody.innerHTML += `
+        <tr>
+          <td><strong>${r.rep_name}</strong></td>
+          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+          <td><code>${r.access_token || 'N/A'}</code></td>
+          <td>
+            <button class="action-btn btn-copy" onclick="copyText('${repPortalUrl}', 'Sales Rep Portal Link')">Copy Rep Link</button>
+          </td>
+        </tr>
+      `;
+    });
+
+    // Map relationships manually for Businesses Table
     const repMap = new Map((salesReps || []).map(r => [r.id, r.rep_name]));
     const qrMap = new Map((qrCodes || []).map(q => [q.id, q.code]));
 
     loadedBusinesses = businesses || [];
     const tbody = document.getElementById('businesses-tbody');
     tbody.innerHTML = '';
-
-    const baseUrl = `${window.location.origin}/wonderqr`;
 
     loadedBusinesses.forEach(b => {
       const qrCode = qrMap.get(b.qr_code_id) || '';
