@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sales Onboarding - WonderQR</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container" style="max-width: 480px;">
+    <h2>Onboard New Business</h2>
+    <p class="subtitle" id="rep-name-display">Verifying Access Token...</p>
+
+    <form id="onboard-form" class="hidden" style="text-align: left;">
+      <label class="form-label">Standee Code *</label>
+      <input type="text" id="qr-code-input" class="form-input" placeholder="e.g. RS00001" required>
+
+      <label class="form-label">Business Name *</label>
+      <input type="text" id="biz-name-input" class="form-input" placeholder="e.g. Varsha Grand" required>
+
+      <label class="form-label">Google Review Link *</label>
+      <input type="url" id="google-url-input" class="form-input" placeholder="https://g.page/r/..." required>
+
+      <label class="form-label">WhatsApp Number (with country code)</label>
+      <input type="tel" id="whatsapp-input" class="form-input" placeholder="e.g. 919876543210">
+
+      <label class="form-label">Phone Number for Direct Calls</label>
+      <input type="tel" id="phone-input" class="form-input" placeholder="e.g. +919876543210">
+
+      <label class="form-label">Instagram Profile Link</label>
+      <input type="url" id="instagram-input" class="form-input" placeholder="https://instagram.com/profile">
+
+      <label class="form-label">YouTube Channel Link</label>
+      <input type="url" id="youtube-input" class="form-input" placeholder="https://youtube.com/@channel">
+
+      <label class="form-label">Owner / Manager Name *</label>
+      <input type="text" id="owner-name-input" class="form-input" placeholder="e.g. Ravi" required>
+
+      <button type="submit" style="margin-top: 1rem;">Activate Standee Now</button>
+    </form>
+
+    <div id="success-screen" class="hidden">
+      <h3 style="color: #16a34a;">Standee Activated!</h3>
+      <p class="subtitle">Share this private dashboard link with the owner:</p>
+      <input type="text" id="owner-link-output" readonly class="form-input" style="margin-bottom: 1rem;">
+      <button onclick="window.location.reload()">Onboard Another</button>
+    </div>
+  </div>
+
+  <script type="module" src="js/sales.js"></script>
+</body>
+</html>

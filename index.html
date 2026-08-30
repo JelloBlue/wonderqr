@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rate Your Experience - WonderQR</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="container">
+    <div id="loading">Loading business info...</div>
+    
+    <div id="review-app" class="hidden">
+      <h1 id="business-name">Business Name</h1>
+      <p class="subtitle">How was your experience today?</p>
+      
+      <div class="star-rating" id="star-container">
+        <span class="star" data-rating="1">★</span>
+        <span class="star" data-rating="2">★</span>
+        <span class="star" data-rating="3">★</span>
+        <span class="star" data-rating="4">★</span>
+        <span class="star" data-rating="5">★</span>
+      </div>
+
+      <!-- Social & Direct Action Buttons -->
+      <div id="social-links" class="social-container hidden">
+        <a id="btn-whatsapp" target="_blank" class="action-btn btn-wa hidden">WhatsApp Us</a>
+        <a id="btn-call" class="action-btn btn-call hidden">Call Us</a>
+        <a id="btn-instagram" target="_blank" class="action-btn btn-ig hidden">Instagram</a>
+        <a id="btn-youtube" target="_blank" class="action-btn btn-yt hidden">YouTube</a>
+      </div>
+
+      <div id="feedback-form" class="hidden">
+        <textarea id="feedback-message" rows="4" placeholder="Tell us what went wrong so we can improve..."></textarea>
+        <button id="submit-btn">Submit Feedback</button>
+      </div>
+    </div>
+
+    <div id="thank-you" class="hidden">
+      <h2>Thank You!</h2>
+      <p class="subtitle">Your feedback has been sent directly to management.</p>
+    </div>
+  </div>
+
+  <script type="module" src="js/review.js"></script>
+</body>
+</html>
