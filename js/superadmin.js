@@ -13,7 +13,6 @@ if (adminPass !== MASTER_KEY) {
   document.getElementById('auth-status').innerText = "System Overview";
   document.getElementById('admin-content').classList.remove('hidden');
 
-  // Initialize window array to store businesses globally
   window.loadedBusinesses = [];
 
   window.copyText = function(text, label) {
@@ -46,7 +45,6 @@ if (adminPass !== MASTER_KEY) {
   });
 
   async function loadDashboard() {
-    // 1. Fetch Overview Metrics
     const { count: bizCount } = await supabase.from('businesses').select('*', { count: 'exact', head: true });
     const { count: repsCount } = await supabase.from('sales_reps').select('*', { count: 'exact', head: true });
     const { count: fbCount } = await supabase.from('feedback').select('*', { count: 'exact', head: true });
@@ -69,17 +67,14 @@ if (adminPass !== MASTER_KEY) {
     document.getElementById('stat-qr').innerText = qrCount || 0;
     document.getElementById('stat-fb').innerText = fbCount || 0;
 
-    // 2. Fetch Data Tables
     const { data: salesReps } = await supabase.from('sales_reps').select('*').order('created_at', { ascending: false });
     const { data: qrCodes } = await supabase.from('qr_codes').select('id, code');
     const { data: businesses, error } = await supabase.from('businesses').select('*').order('created_at', { ascending: false });
 
     if (error) console.error("Error fetching businesses:", error);
 
-    // Save fetched array globally so openEditModal in superadmin.html can find business items
     window.loadedBusinesses = businesses || [];
 
-    // Populate Sales Rep Dropdown
     const repSelect = document.getElementById('add-rep-select');
     if (repSelect) {
       repSelect.innerHTML = '<option value="">Direct Admin (No Rep)</option>';
@@ -88,7 +83,6 @@ if (adminPass !== MASTER_KEY) {
       });
     }
 
-    // Render Sales Reps Table
     const repsTbody = document.getElementById('reps-tbody');
     if (repsTbody) {
       repsTbody.innerHTML = '';
@@ -112,7 +106,6 @@ if (adminPass !== MASTER_KEY) {
       });
     }
 
-    // Render Businesses Table
     const repMap = new Map((salesReps || []).map(r => [r.id, r.rep_name]));
     const qrMap = new Map((qrCodes || []).map(q => [q.id, q.code]));
 
@@ -145,7 +138,6 @@ if (adminPass !== MASTER_KEY) {
     });
   }
 
-  // 3. Form Handlers
   setupListener('add-biz-form', 'submit', async (e) => {
     e.preventDefault();
 
@@ -156,6 +148,8 @@ if (adminPass !== MASTER_KEY) {
     const repId = document.getElementById('add-rep-select').value || null;
     const whatsapp = document.getElementById('add-whatsapp').value.trim() || null;
     const phone = document.getElementById('add-phone').value.trim() || null;
+    const instaUrl = document.getElementById('add-instagram-url').value.trim() || null;
+    const ytUrl = document.getElementById('add-youtube-url').value.trim() || null;
 
     const { data: qrData, error: qrErr } = await supabase
       .from('qr_codes')
@@ -177,7 +171,9 @@ if (adminPass !== MASTER_KEY) {
         owner_name: ownerName,
         sales_rep_id: repId,
         whatsapp_number: whatsapp,
-        phone_number: phone
+        phone_number: phone,
+        instagram_url: instaUrl,
+        youtube_url: ytUrl
       }]);
 
     if (bizErr) {
@@ -206,19 +202,28 @@ if (adminPass !== MASTER_KEY) {
       owner_name: document.getElementById('edit-owner-name').value.trim(),
       google_review_url: document.getElementById('edit-google-url').value.trim(),
       whatsapp_number: document.getElementById('edit-whatsapp').value.trim() || null,
-      phone_number: document.getElementById('edit-phone').value.trim() || null
+      phone_number: document.getElementById('edit-phone').value.trim() || null,
+      instagram_url: document.getElementById('edit-instagram-url').value.trim() || null,
+      youtube_url: document.getElementById('edit-youtube-url').value.trim() || null
     };
 
-    const { error } = await supabase.from('businesses').update(updatedData).eq('id', bizId);
+    const { error, data } = await supabase
+      .from('businesses')
+      .update(updatedData)
+      .eq('id', bizId)
+      .select();
 
     if (error) {
+      console.error("Update failed:", error);
       alert("Failed to update business: " + error.message);
+    } else if (!data || data.length === 0) {
+      alert("Update blocked: Row Level Security (RLS) prevented saving this row. Ensure Step 1 SQL query is run in Supabase.");
     } else {
       alert("Business updated successfully!");
       const editModal = document.getElementById('edit-modal');
       editModal.classList.add('hidden');
       editModal.style.display = 'none';
-      loadDashboard();
+      await loadDashboard();
     }
   });
 
