@@ -3,44 +3,66 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Rate Your Experience - WonderQR</title>
+  <title>Leave a Review - WonderQR</title>
+  <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="css/style.css">
+  <style>
+    .star-rating { display: flex; justify-content: center; gap: 8px; font-size: 2rem; margin: 20px 0; cursor: pointer; }
+    .star { color: #d1d5db; transition: color 0.2s; }
+    .star.selected, .star:hover { color: #f59e0b; }
+    .hidden { display: none !important; }
+    .social-links { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
+    .social-btn { padding: 8px 14px; border-radius: 6px; color: white; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+    .btn-insta { background-color: #e1306c; }
+    .btn-yt { background-color: #ff0000; }
+    .btn-wa { background-color: #25d366; }
+  </style>
 </head>
 <body>
-  <div class="container">
-    <div id="loading">Loading business info...</div>
-    
-    <div id="review-app" class="hidden">
-      <h1 id="business-name">Business Name</h1>
-      <p class="subtitle">How was your experience today?</p>
-      
-      <div class="star-rating" id="star-container">
-        <span class="star" data-rating="1">★</span>
-        <span class="star" data-rating="2">★</span>
-        <span class="star" data-rating="3">★</span>
-        <span class="star" data-rating="4">★</span>
-        <span class="star" data-rating="5">★</span>
-      </div>
-      <div id="feedback-form" class="hidden">
-        <textarea id="feedback-message" rows="4" placeholder="Tell us what went wrong so we can improve..."></textarea>
-        <button id="submit-btn">Submit Feedback</button>
-      </div>
-      
-      <!-- Social & Direct Action Buttons -->
-      <div id="social-links" class="social-container hidden">
-        <a id="btn-whatsapp" target="_blank" class="action-btn btn-wa hidden">WhatsApp Us</a>
-        <a id="btn-call" class="action-btn btn-call hidden">Call Us</a>
-        <a id="btn-instagram" target="_blank" class="action-btn btn-ig hidden">Instagram</a>
-        <a id="btn-youtube" target="_blank" class="action-btn btn-yt hidden">YouTube</a>
-      </div>
+  <div class="container" style="max-width: 480px; text-align: center;">
+    <h2 id="biz-name">Loading Business...</h2>
+    <p id="biz-subtitle">How was your experience with us today?</p>
+
+    <!-- Interactive Star Rating UI -->
+    <div id="star-container" class="star-rating">
+      <span class="star" data-rating="1">★</span>
+      <span class="star" data-rating="2">★</span>
+      <span class="star" data-rating="3">★</span>
+      <span class="star" data-rating="4">★</span>
+      <span class="star" data-rating="5">★</span>
     </div>
 
-    <div id="thank-you" class="hidden">
-      <h2>Thank You!</h2>
-      <p class="subtitle">Your feedback has been sent directly to management.</p>
+    <!-- Private Feedback Form (For Ratings 1 to 3) -->
+    <div id="feedback-form-container" class="hidden" style="margin-top: 20px; text-align: left;">
+      <p style="font-weight: 600; font-size: 0.9rem; color: #374151;">We're sorry to hear that. Please let us know how we can improve:</p>
+      <form id="feedback-form">
+        <label class="form-label">Your Feedback *</label>
+        <textarea id="fb-comments" class="form-input" rows="4" placeholder="Tell us what went wrong..." required></textarea>
+
+        <label class="form-label">Name (Optional)</label>
+        <input type="text" id="fb-name" class="form-input" placeholder="Your name">
+
+        <label class="form-label">Phone / Contact (Optional)</label>
+        <input type="tel" id="fb-phone" class="form-input" placeholder="Your contact number">
+
+        <button type="submit" class="action-btn btn-add" style="width: 100%; padding: 12px; margin-top: 10px;">Submit Feedback</button>
+      </form>
+    </div>
+
+    <!-- Thank You Message -->
+    <div id="thank-you-msg" class="hidden" style="margin-top: 20px; padding: 16px; background: #dcfce7; border-radius: 8px; color: #166534;">
+      <h3>Thank You!</h3>
+      <p>Your feedback has been submitted directly to the owner.</p>
+    </div>
+
+    <!-- Social Links Block -->
+    <div id="social-block" class="social-links hidden">
+      <a id="link-wa" href="#" target="_blank" class="social-btn btn-wa hidden">WhatsApp</a>
+      <a id="link-insta" href="#" target="_blank" class="social-btn btn-insta hidden">Instagram</a>
+      <a id="link-yt" href="#" target="_blank" class="social-btn btn-yt hidden">YouTube</a>
     </div>
   </div>
 
-  <script type="module" src="js/review.js"></script>
+  <script type="module" src="js/main.js?v=2"></script>
 </body>
 </html>
