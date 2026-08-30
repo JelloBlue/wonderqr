@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Admin - WonderQR</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .metric-card { background: #f9fafb; border: 1px solid #e5e7eb; padding: 16px; border-radius: 8px; text-align: center; }
+    .metric-num { font-size: 1.8rem; font-weight: bold; color: #4f46e5; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 24px; text-align: left; }
+    .data-table th, .data-table td { border: 1px solid #e5e7eb; padding: 10px; }
+    .data-table th { background: #f3f4f6; }
+  </style>
+</head>
+<body>
+  <div class="container" style="max-width: 900px; text-align: left;">
+    <h2>Super Admin Dashboard</h2>
+    <p class="subtitle" id="auth-status">Authenticating...</p>
+
+    <div id="admin-content" class="hidden">
+      <!-- High-Level Platform Overview -->
+      <div class="metrics-grid">
+        <div class="metric-card"><div class="metric-num" id="stat-biz">0</div><div>Businesses</div></div>
+        <div class="metric-card"><div class="metric-num" id="stat-reps">0</div><div>Sales Reps</div></div>
+        <div class="metric-card"><div class="metric-num" id="stat-qr">0</div><div>QR Codes Assigned</div></div>
+        <div class="metric-card"><div class="metric-num" id="stat-fb">0</div><div>Private Feedbacks</div></div>
+      </div>
+
+      <!-- Add New Sales Rep Section -->
+      <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
+        <h4 style="margin-top:0;">Create New Sales Rep Token</h4>
+        <div style="display: flex; gap: 8px;">
+          <input type="text" id="new-rep-name" class="form-input" placeholder="Sales Rep Name" style="flex: 1;">
+          <button type="button" id="create-rep-btn" style="padding: 10px 16px; background-color: #4f46e5; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Generate Token</button>
+        </div>
+      </div>
+
+      <!-- Onboarded Businesses Overview -->
+      <h3>Onboarded Businesses</h3>
+      <div style="overflow-x: auto;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Business</th>
+              <th>Owner</th>
+              <th>QR Code</th>
+              <th>Sales Rep</th>
+              <th>Owner Link</th>
+            </tr>
+          </thead>
+          <tbody id="businesses-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/superadmin.js"></script>
+</body>
+</html>
