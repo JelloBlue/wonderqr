@@ -13,31 +13,12 @@ if (adminPass !== MASTER_KEY) {
   document.getElementById('auth-status').innerText = "System Overview";
   document.getElementById('admin-content').classList.remove('hidden');
 
-  let loadedBusinesses = [];
+  // Initialize window array to store businesses globally
+  window.loadedBusinesses = [];
 
-  // Expose global window helper for copying links
   window.copyText = function(text, label) {
     navigator.clipboard.writeText(text);
     alert(`${label} copied to clipboard!`);
-  };
-
-  // Expose global window function for edit modal trigger
-  window.openEditModal = function(bizId) {
-    const biz = loadedBusinesses.find(b => b.id === bizId);
-    if (!biz) {
-      console.error("Business not found for ID:", bizId);
-      return;
-    }
-
-    document.getElementById('edit-biz-id').value = biz.id || '';
-    document.getElementById('edit-biz-name').value = biz.business_name || '';
-    document.getElementById('edit-owner-name').value = biz.owner_name || '';
-    document.getElementById('edit-google-url').value = biz.google_review_url || '';
-    document.getElementById('edit-whatsapp').value = biz.whatsapp_number || '';
-    document.getElementById('edit-phone').value = biz.phone_number || '';
-
-    const editModal = document.getElementById('edit-modal');
-    if (editModal) editModal.classList.remove('hidden');
   };
 
   function setupListener(id, event, callback) {
@@ -47,30 +28,34 @@ if (adminPass !== MASTER_KEY) {
 
   setupListener('open-add-modal-btn', 'click', () => {
     document.getElementById('add-biz-form').reset();
-    document.getElementById('add-modal').classList.remove('hidden');
+    const addModal = document.getElementById('add-modal');
+    addModal.classList.remove('hidden');
+    addModal.style.display = 'flex';
   });
 
   setupListener('close-add-modal-btn', 'click', () => {
-    document.getElementById('add-modal').classList.add('hidden');
+    const addModal = document.getElementById('add-modal');
+    addModal.classList.add('hidden');
+    addModal.style.display = 'none';
   });
 
   setupListener('close-edit-modal-btn', 'click', () => {
-    document.getElementById('edit-modal').classList.add('hidden');
+    const editModal = document.getElementById('edit-modal');
+    editModal.classList.add('hidden');
+    editModal.style.display = 'none';
   });
 
   async function loadDashboard() {
-    // 1. Fetch Metrics Data
+    // 1. Fetch Overview Metrics
     const { count: bizCount } = await supabase.from('businesses').select('*', { count: 'exact', head: true });
     const { count: repsCount } = await supabase.from('sales_reps').select('*', { count: 'exact', head: true });
     const { count: fbCount } = await supabase.from('feedback').select('*', { count: 'exact', head: true });
 
-    // Try counting status = 'assigned' case-insensitively
     let { count: qrCount } = await supabase
       .from('qr_codes')
       .select('*', { count: 'exact', head: true })
       .ilike('status', 'assigned');
 
-    // Fallback: If status column returns 0, count businesses with assigned qr_code_id
     if (!qrCount || qrCount === 0) {
       const { count: assignedBizQr } = await supabase
         .from('businesses')
@@ -84,14 +69,17 @@ if (adminPass !== MASTER_KEY) {
     document.getElementById('stat-qr').innerText = qrCount || 0;
     document.getElementById('stat-fb').innerText = fbCount || 0;
 
-    // 2. Fetch Base Tables Data
+    // 2. Fetch Data Tables
     const { data: salesReps } = await supabase.from('sales_reps').select('*').order('created_at', { ascending: false });
     const { data: qrCodes } = await supabase.from('qr_codes').select('id, code');
     const { data: businesses, error } = await supabase.from('businesses').select('*').order('created_at', { ascending: false });
 
     if (error) console.error("Error fetching businesses:", error);
 
-    // Populate Sales Rep Select Options inside Add Business Modal
+    // Save fetched array globally so openEditModal in superadmin.html can find business items
+    window.loadedBusinesses = businesses || [];
+
+    // Populate Sales Rep Dropdown
     const repSelect = document.getElementById('add-rep-select');
     if (repSelect) {
       repSelect.innerHTML = '<option value="">Direct Admin (No Rep)</option>';
@@ -124,10 +112,7 @@ if (adminPass !== MASTER_KEY) {
       });
     }
 
-    // Save fetched businesses into the global variable so window.openEditModal can access it
-    loadedBusinesses = businesses || [];
-
-    // Render Onboarded Businesses Table
+    // Render Businesses Table
     const repMap = new Map((salesReps || []).map(r => [r.id, r.rep_name]));
     const qrMap = new Map((qrCodes || []).map(q => [q.id, q.code]));
 
@@ -136,7 +121,7 @@ if (adminPass !== MASTER_KEY) {
 
     const baseUrl = `${window.location.origin}/wonderqr`;
 
-    loadedBusinesses.forEach(b => {
+    window.loadedBusinesses.forEach(b => {
       const qrCode = qrMap.get(b.qr_code_id) || '';
       const customerUrl = `${baseUrl}/?qr=${encodeURIComponent(qrCode)}`;
       const ownerUrl = `${baseUrl}/admin.html?token=${b.auth_token}`;
@@ -160,7 +145,7 @@ if (adminPass !== MASTER_KEY) {
     });
   }
 
-  // 3. Onboard Business Handler
+  // 3. Form Handlers
   setupListener('add-biz-form', 'submit', async (e) => {
     e.preventDefault();
 
@@ -200,18 +185,18 @@ if (adminPass !== MASTER_KEY) {
       return;
     }
 
-    // Automatically update QR code status to 'assigned'
     await supabase
       .from('qr_codes')
       .update({ status: 'assigned' })
       .eq('id', qrData.id);
 
     alert("Business Onboarded Successfully!");
-    document.getElementById('add-modal').classList.add('hidden');
+    const addModal = document.getElementById('add-modal');
+    addModal.classList.add('hidden');
+    addModal.style.display = 'none';
     loadDashboard();
   });
 
-  // 4. Edit Business Handler
   setupListener('edit-biz-form', 'submit', async (e) => {
     e.preventDefault();
     const bizId = document.getElementById('edit-biz-id').value;
@@ -230,12 +215,13 @@ if (adminPass !== MASTER_KEY) {
       alert("Failed to update business: " + error.message);
     } else {
       alert("Business updated successfully!");
-      document.getElementById('edit-modal').classList.add('hidden');
+      const editModal = document.getElementById('edit-modal');
+      editModal.classList.add('hidden');
+      editModal.style.display = 'none';
       loadDashboard();
     }
   });
 
-  // 5. Generate Sales Rep Token Handler
   setupListener('create-rep-btn', 'click', async () => {
     const name = document.getElementById('new-rep-name').value.trim();
     if (!name) return alert("Enter rep name");
