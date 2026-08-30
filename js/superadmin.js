@@ -53,25 +53,36 @@ if (adminPass !== MASTER_KEY) {
   };
 
   async function loadDashboard() {
-    // 1. Metrics
-    const { count: bizCount } = await supabase.from('businesses').select('*', { count: 'exact', head: true });
-    const { count: repsCount } = await supabase.from('sales_reps').select('*', { count: 'exact', head: true });
-    const { count: qrCount } = await supabase.from('qr_codes').select('*', { count: 'exact', head: true }).eq('status', 'assigned');
-    const { count: fbCount } = await supabase.from('feedback').select('*', { count: 'exact', head: true });
+    // 1. Metrics Overview
+    const { count: bizCount, error: bizCntErr } = await supabase.from('businesses').select('*', { count: 'exact', head: true });
+    const { count: repsCount, error: repsCntErr } = await supabase.from('sales_reps').select('*', { count: 'exact', head: true });
+    
+    // Case-insensitive status check for assigned QR codes
+    const { count: qrCount, error: qrCntErr } = await supabase
+      .from('qr_codes')
+      .select('*', { count: 'exact', head: true })
+      .ilike('status', 'assigned');
+      
+    const { count: fbCount, error: fbCntErr } = await supabase.from('feedback').select('*', { count: 'exact', head: true });
+
+    if (bizCntErr) console.error("Error fetching biz metric:", bizCntErr);
+    if (repsCntErr) console.error("Error fetching reps metric:", repsCntErr);
+    if (qrCntErr) console.error("Error fetching QR metric:", qrCntErr);
+    if (fbCntErr) console.error("Error fetching feedback metric:", fbCntErr);
 
     document.getElementById('stat-biz').innerText = bizCount || 0;
     document.getElementById('stat-reps').innerText = repsCount || 0;
     document.getElementById('stat-qr').innerText = qrCount || 0;
     document.getElementById('stat-fb').innerText = fbCount || 0;
 
-    // 2. Fetch Sales Reps
+    // 2. Fetch Base Tables for Data Mapping
     const { data: salesReps } = await supabase.from('sales_reps').select('*').order('created_at', { ascending: false });
     const { data: qrCodes } = await supabase.from('qr_codes').select('id, code');
     const { data: businesses, error } = await supabase.from('businesses').select('*').order('created_at', { ascending: false });
 
-    if (error) console.error("Error fetching businesses:", error);
+    if (error) console.error("Error fetching businesses list:", error);
 
-    // Populate Sales Rep Dropdown for Onboarding Modal
+    // Populate Sales Rep Select Dropdown in Modal
     const repSelect = document.getElementById('add-rep-select');
     if (repSelect) {
       repSelect.innerHTML = '<option value="">Direct Admin (No Rep)</option>';
@@ -82,33 +93,37 @@ if (adminPass !== MASTER_KEY) {
 
     // Render Sales Reps Table
     const repsTbody = document.getElementById('reps-tbody');
-    repsTbody.innerHTML = '';
-    const baseUrl = `${window.location.origin}/wonderqr`;
+    if (repsTbody) {
+      repsTbody.innerHTML = '';
+      const baseUrl = `${window.location.origin}/wonderqr`;
 
-    (salesReps || []).forEach(r => {
-      const repPortalUrl = `${baseUrl}/sales.html?rep_token=${r.access_token}`;
-      const statusClass = r.active !== false ? 'badge-active' : 'badge-inactive';
-      const statusText = r.active !== false ? 'Active' : 'Inactive';
+      (salesReps || []).forEach(r => {
+        const repPortalUrl = `${baseUrl}/sales.html?rep_token=${r.access_token}`;
+        const statusClass = r.active !== false ? 'badge-active' : 'badge-inactive';
+        const statusText = r.active !== false ? 'Active' : 'Inactive';
 
-      repsTbody.innerHTML += `
-        <tr>
-          <td><strong>${r.rep_name}</strong></td>
-          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-          <td><code>${r.access_token || 'N/A'}</code></td>
-          <td>
-            <button class="action-btn btn-copy" onclick="copyText('${repPortalUrl}', 'Sales Rep Portal Link')">Copy Rep Link</button>
-          </td>
-        </tr>
-      `;
-    });
+        repsTbody.innerHTML += `
+          <tr>
+            <td><strong>${r.rep_name}</strong></td>
+            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            <td><code>${r.access_token || 'N/A'}</code></td>
+            <td>
+              <button class="action-btn btn-copy" onclick="copyText('${repPortalUrl}', 'Sales Rep Portal Link')">Copy Rep Link</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
 
-    // Map relationships manually for Businesses Table
+    // Render Onboarded Businesses Table
     const repMap = new Map((salesReps || []).map(r => [r.id, r.rep_name]));
     const qrMap = new Map((qrCodes || []).map(q => [q.id, q.code]));
 
     loadedBusinesses = businesses || [];
     const tbody = document.getElementById('businesses-tbody');
     tbody.innerHTML = '';
+
+    const baseUrl = `${window.location.origin}/wonderqr`;
 
     loadedBusinesses.forEach(b => {
       const qrCode = qrMap.get(b.qr_code_id) || '';
@@ -134,7 +149,7 @@ if (adminPass !== MASTER_KEY) {
     });
   }
 
-  // 3. Onboard Business Handler
+  // 3. Handle Direct Business Onboarding from Super Admin
   setupListener('add-biz-form', 'submit', async (e) => {
     e.preventDefault();
 
@@ -146,11 +161,12 @@ if (adminPass !== MASTER_KEY) {
     const whatsapp = document.getElementById('add-whatsapp').value.trim() || null;
     const phone = document.getElementById('add-phone').value.trim() || null;
 
+    // Check QR code availability
     const { data: qrData, error: qrErr } = await supabase
       .from('qr_codes')
       .select('id')
-      .eq('code', qrCode)
-      .eq('status', 'available')
+      .ilike('code', qrCode)
+      .ilike('status', 'available')
       .single();
 
     if (qrErr || !qrData) {
@@ -158,6 +174,7 @@ if (adminPass !== MASTER_KEY) {
       return;
     }
 
+    // Insert new business
     const { error: bizErr } = await supabase
       .from('businesses')
       .insert([{
@@ -175,6 +192,7 @@ if (adminPass !== MASTER_KEY) {
       return;
     }
 
+    // Update QR code status to assigned
     await supabase
       .from('qr_codes')
       .update({ status: 'assigned' })
@@ -185,7 +203,7 @@ if (adminPass !== MASTER_KEY) {
     loadDashboard();
   });
 
-  // 4. Edit Business Handler
+  // 4. Handle Edit Business Form Submit
   setupListener('edit-biz-form', 'submit', async (e) => {
     e.preventDefault();
     const bizId = document.getElementById('edit-biz-id').value;
@@ -209,7 +227,7 @@ if (adminPass !== MASTER_KEY) {
     }
   });
 
-  // 5. Generate Sales Rep Token Handler
+  // 5. Generate Sales Rep Tokens
   setupListener('create-rep-btn', 'click', async () => {
     const name = document.getElementById('new-rep-name').value.trim();
     if (!name) return alert("Enter rep name");
