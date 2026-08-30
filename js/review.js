@@ -1,103 +1,173 @@
-import { supabase } from './config.js';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
+import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
-let selectedRating = 0;
-let currentBusiness = null;
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const urlParams = new URLSearchParams(window.location.search);
 const qrCode = urlParams.get('qr');
 
+let currentBusiness = null;
+let selectedRating = 0;
+
 async function init() {
   if (!qrCode) {
-    document.getElementById('loading').innerText = "Invalid QR code link.";
+    const bizNameEl = document.getElementById('biz-name');
+    const bizSubEl = document.getElementById('biz-subtitle');
+    if (bizNameEl) bizNameEl.innerText = "Invalid Link";
+    if (bizSubEl) bizSubEl.innerText = "No QR code specified in URL.";
     return;
   }
 
-  const { data, error } = await supabase
-    .from('businesses')
-    .select('id, business_name, google_review_url, instagram_url, youtube_url, whatsapp_number, phone_number, qr_codes!inner(code)')
-    .eq('qr_codes.code', qrCode)
+  // 1. Fetch QR Code details
+  const { data: qrData, error: qrErr } = await supabase
+    .from('qr_codes')
+    .select('id')
+    .ilike('code', qrCode)
     .single();
 
-  if (error || !data) {
-    document.getElementById('loading').innerText = "Business not found or link inactive.";
+  if (qrErr || !qrData) {
+    const bizNameEl = document.getElementById('biz-name');
+    if (bizNameEl) bizNameEl.innerText = "QR Code Not Found";
     return;
   }
 
-  currentBusiness = data;
-  document.getElementById('business-name').innerText = data.business_name;
+  // 2. Fetch Business assigned to this QR code
+  const { data: bizData, error: bizErr } = await supabase
+    .from('businesses')
+    .select('*')
+    .eq('qr_code_id', qrData.id)
+    .single();
 
-  // Setup Social Buttons
-  let hasSocials = false;
-  if (data.whatsapp_number) {
-    const btn = document.getElementById('btn-whatsapp');
-    btn.href = `https://wa.me/${data.whatsapp_number.replace(/[^0-9]/g, '')}`;
-    btn.classList.remove('hidden');
-    hasSocials = true;
+  if (bizErr || !bizData) {
+    const bizNameEl = document.getElementById('biz-name');
+    if (bizNameEl) bizNameEl.innerText = "Business Not Registered";
+    return;
   }
 
-  if (data.phone_number) {
-    const btn = document.getElementById('btn-call');
-    btn.href = `tel:${data.phone_number}`;
-    btn.classList.remove('hidden');
-    hasSocials = true;
-  }
+  currentBusiness = bizData;
+  const bizNameEl = document.getElementById('biz-name');
+  if (bizNameEl) bizNameEl.innerText = currentBusiness.business_name;
 
-  if (data.instagram_url) {
-    const btn = document.getElementById('btn-instagram');
-    btn.href = data.instagram_url;
-    btn.classList.remove('hidden');
-    hasSocials = true;
-  }
+  // 3. Setup Social Media Buttons
+  setupSocialLinks();
 
-  if (data.youtube_url) {
-    const btn = document.getElementById('btn-youtube');
-    btn.href = data.youtube_url;
-    btn.classList.remove('hidden');
-    hasSocials = true;
-  }
-
-  if (hasSocials) {
-    document.getElementById('social-links').classList.remove('hidden');
-  }
-
-  document.getElementById('loading').classList.add('hidden');
-  document.getElementById('review-app').classList.remove('hidden');
+  // 4. Attach Click Events to Stars
+  setupStars();
 }
 
-const stars = document.querySelectorAll('.star');
-stars.forEach(star => {
-  star.addEventListener('click', (e) => {
-    selectedRating = parseInt(e.target.getAttribute('data-rating'));
-    updateStars(selectedRating);
+function setupSocialLinks() {
+  const socialBlock = document.getElementById('social-block');
+  let hasSocial = false;
 
-    if (selectedRating >= 4) {
+  if (currentBusiness.whatsapp_number) {
+    const waLink = document.getElementById('link-wa');
+    if (waLink) {
+      waLink.href = `https://wa.me/${currentBusiness.whatsapp_number}`;
+      waLink.classList.remove('hidden');
+      hasSocial = true;
+    }
+  }
+  if (currentBusiness.instagram_url) {
+    const instaLink = document.getElementById('link-insta');
+    if (instaLink) {
+      instaLink.href = currentBusiness.instagram_url;
+      instaLink.classList.remove('hidden');
+      hasSocial = true;
+    }
+  }
+  if (currentBusiness.youtube_url) {
+    const ytLink = document.getElementById('link-yt');
+    if (ytLink) {
+      ytLink.href = currentBusiness.youtube_url;
+      ytLink.classList.remove('hidden');
+      hasSocial = true;
+    }
+  }
+
+  if (hasSocial && socialBlock) {
+    socialBlock.classList.remove('hidden');
+  }
+}
+
+function setupStars() {
+  const stars = document.querySelectorAll('#star-container .star');
+
+  stars.forEach(star => {
+    star.addEventListener('click', async () => {
+      const rating = parseInt(star.getAttribute('data-rating'), 10);
+      selectedRating = rating;
+
+      // Update UI selection state
+      stars.forEach(s => {
+        const r = parseInt(s.getAttribute('data-rating'), 10);
+        if (r <= rating) {
+          s.classList.add('selected');
+        } else {
+          s.classList.remove('selected');
+        }
+      });
+
+      if (rating >= 4) {
+        // High Ratings (4 & 5 Stars): Track in DB then redirect outward
+        const bizSubEl = document.getElementById('biz-subtitle');
+        if (bizSubEl) bizSubEl.innerText = "Redirecting to Google Reviews...";
+        await logRatingAndRedirect(rating);
+      } else {
+        // Low Ratings (1 to 3 Stars): Open internal private feedback form
+        const fbContainer = document.getElementById('feedback-form-container');
+        if (fbContainer) fbContainer.classList.remove('hidden');
+      }
+    });
+  });
+}
+
+async function logRatingAndRedirect(ratingValue) {
+  try {
+    // Record rating click event in feedback table
+    await supabase.from('feedback').insert([{
+      business_id: currentBusiness.id,
+      rating: ratingValue,
+      comments: 'Redirected to Google Review'
+    }]);
+  } catch (err) {
+    console.error("Error logging rating count:", err);
+  } finally {
+    // Redirect customer to Google Review link
+    if (currentBusiness.google_review_url) {
       window.location.href = currentBusiness.google_review_url;
     } else {
-      document.getElementById('feedback-form').classList.remove('hidden');
+      alert("Google Review link is not configured for this business.");
     }
-  });
-});
-
-function updateStars(rating) {
-  stars.forEach(star => {
-    const r = parseInt(star.getAttribute('data-rating'));
-    star.classList.toggle('active', r <= rating);
-  });
+  }
 }
 
-document.getElementById('submit-btn').addEventListener('click', async () => {
-  const message = document.getElementById('feedback-message').value;
+// Handle Form Submission for 1, 2, and 3-Star Feedback
+const feedbackForm = document.getElementById('feedback-form');
+if (feedbackForm) {
+  feedbackForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-  const { error } = await supabase
-    .from('feedback')
-    .insert([{ business_id: currentBusiness.id, rating: selectedRating, message }]);
+    const comments = document.getElementById('fb-comments').value.trim();
+    const customerName = document.getElementById('fb-name') ? document.getElementById('fb-name').value.trim() : null;
+    const customerPhone = document.getElementById('fb-phone') ? document.getElementById('fb-phone').value.trim() : null;
 
-  if (!error) {
-    document.getElementById('review-app').classList.add('hidden');
-    document.getElementById('thank-you').classList.remove('hidden');
-  } else {
-    alert("Could not submit feedback. Please try again.");
-  }
-});
+    const { error } = await supabase.from('feedback').insert([{
+      business_id: currentBusiness.id,
+      rating: selectedRating,
+      comments: comments,
+      customer_name: customerName,
+      customer_phone: customerPhone
+    }]);
+
+    if (error) {
+      alert("Failed to send feedback: " + error.message);
+    } else {
+      const fbContainer = document.getElementById('feedback-form-container');
+      const thankYou = document.getElementById('thank-you-msg');
+      if (fbContainer) fbContainer.classList.add('hidden');
+      if (thankYou) thankYou.classList.remove('hidden');
+    }
+  });
+}
 
 init();
