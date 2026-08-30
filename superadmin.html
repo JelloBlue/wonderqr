@@ -11,7 +11,6 @@
     .metric-card { background: #f9fafb; border: 1px solid #e5e7eb; padding: 16px; border-radius: 8px; text-align: center; }
     .metric-num { font-size: 1.8rem; font-weight: bold; color: #4f46e5; }
     
-    /* Sales Rep Input Form Styling (Widened for Desktop) */
     .rep-form-container { display: flex; flex-direction: column; gap: 10px; width: 100%; }
     @media (min-width: 600px) {
       .rep-form-container { flex-direction: row; align-items: center; max-width: 650px; }
@@ -25,6 +24,7 @@
     
     .action-btn { padding: 6px 10px; font-size: 0.75rem; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block; }
     .btn-copy { background-color: #4f46e5; color: white; }
+    .btn-qr { background-color: #8b5cf6; color: white; }
     .btn-edit { background-color: #059669; color: white; }
     .btn-cancel { background-color: #6b7280; color: white; }
     .btn-add { background-color: #16a34a; color: white; font-size: 0.85rem; padding: 8px 14px; }
@@ -77,7 +77,7 @@
         </table>
       </div>
 
-      <!-- Onboarded Businesses Table Header -->
+      <!-- Businesses Table -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; margin-top: 32px;">
         <h3 style="margin: 0;">Onboarded Businesses</h3>
         <button type="button" id="open-add-modal-btn" class="action-btn btn-add">➕ Add Business</button>
@@ -101,7 +101,7 @@
     </div>
   </div>
 
-  <!-- Modal 1: Add New Business Modal -->
+  <!-- Modal 1: Add Business -->
   <div id="add-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <h3 style="margin-top: 0;">Onboard New Business</h3>
@@ -143,7 +143,7 @@
     </div>
   </div>
 
-  <!-- Modal 2: Edit Business Modal -->
+  <!-- Modal 2: Edit Business -->
   <div id="edit-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <h3 style="margin-top: 0;">Edit Business</h3>
@@ -166,10 +166,10 @@
         <input type="tel" id="edit-phone" class="form-input">
 
         <label class="form-label">Instagram Profile URL</label>
-        <input type="url" id="edit-instagram-url" class="form-input" placeholder="e.g. https://instagram.com/yourbusiness">
+        <input type="url" id="edit-instagram-url" class="form-input">
 
         <label class="form-label">YouTube Channel URL</label>
-        <input type="url" id="edit-youtube-url" class="form-input" placeholder="e.g. https://youtube.com/@yourchannel">
+        <input type="url" id="edit-youtube-url" class="form-input">
 
         <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px;">
           <button type="button" id="close-edit-modal-btn" class="action-btn btn-cancel">Cancel</button>
@@ -179,18 +179,25 @@
     </div>
   </div>
 
+  <!-- Modal 3: Generate QR Code Popup -->
+  <div id="qr-modal" class="modal-overlay hidden">
+    <div class="modal-card" style="text-align: center; max-width: 320px;">
+      <h3 style="margin-top: 0;" id="qr-modal-title">QR Code Preview</h3>
+      <div id="qr-canvas-container" style="margin: 20px auto; display: flex; justify-content: center;"></div>
+      <p id="qr-modal-url" style="font-size: 0.72rem; color: #6b7280; word-break: break-all; margin-bottom: 16px;"></p>
+      <div style="display: flex; gap: 8px; justify-content: center;">
+        <button type="button" id="close-qr-modal-btn" class="action-btn btn-cancel">Close</button>
+        <a id="download-qr-btn" download="qr-code.png" class="action-btn btn-add" style="text-decoration: none;">Download PNG</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <script>
     function openEditModal(bizId) {
-      if (!window.loadedBusinesses || window.loadedBusinesses.length === 0) {
-        console.error("Businesses data not loaded yet.");
-        return;
-      }
-
+      if (!window.loadedBusinesses) return;
       const biz = window.loadedBusinesses.find(b => String(b.id) === String(bizId));
-      if (!biz) {
-        console.error("Business not found for ID:", bizId);
-        return;
-      }
+      if (!biz) return;
 
       document.getElementById('edit-biz-id').value = biz.id || '';
       document.getElementById('edit-biz-name').value = biz.business_name || '';
@@ -202,12 +209,10 @@
       document.getElementById('edit-youtube-url').value = biz.youtube_url || '';
 
       const editModal = document.getElementById('edit-modal');
-      if (editModal) {
-        editModal.classList.remove('hidden');
-        editModal.style.display = 'flex';
-      }
+      editModal.classList.remove('hidden');
+      editModal.style.display = 'flex';
     }
   </script>
-  <script type="module" src="js/superadmin.js?v=12"></script>
+  <script type="module" src="js/superadmin.js?v=14"></script>
 </body>
 </html>
