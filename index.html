@@ -7,21 +7,25 @@
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .star-rating { display: flex; justify-content: center; gap: 8px; font-size: 2rem; margin: 20px 0; cursor: pointer; }
-    .star { color: #d1d5db; transition: color 0.2s; }
-    .star.selected, .star:hover { color: #f59e0b; }
+    .star-rating { display: flex; justify-content: center; gap: 8px; font-size: 2.2rem; margin: 24px 0; cursor: pointer; user-select: none; }
+    .star { color: #d1d5db; transition: color 0.2s ease, transform 0.1s ease; }
+    .star:hover { transform: scale(1.15); }
+    .star.selected { color: #f59e0b; }
     .hidden { display: none !important; }
-    .social-links { display: flex; justify-content: center; gap: 12px; margin-top: 20px; }
-    .social-btn { padding: 8px 14px; border-radius: 6px; color: white; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+    
+    .social-links { display: flex; justify-content: center; gap: 10px; margin-top: 24px; flex-wrap: wrap; }
+    .social-btn { padding: 8px 16px; border-radius: 6px; color: white; text-decoration: none; font-size: 0.85rem; font-weight: 600; display: inline-block; }
     .btn-insta { background-color: #e1306c; }
     .btn-yt { background-color: #ff0000; }
     .btn-wa { background-color: #25d366; }
+    
+    .feedback-card { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 18px; text-align: left; }
   </style>
 </head>
 <body>
-  <div class="container" style="max-width: 480px; text-align: center;">
+  <div class="container" style="max-width: 480px; text-align: center; margin: 0 auto; padding: 20px;">
     <h2 id="biz-name">Loading Business...</h2>
-    <p id="biz-subtitle">How was your experience with us today?</p>
+    <p id="biz-subtitle" style="color: #4b5563;">How was your experience with us today?</p>
 
     <!-- Interactive Star Rating UI -->
     <div id="star-container" class="star-rating">
@@ -32,27 +36,27 @@
       <span class="star" data-rating="5">★</span>
     </div>
 
-    <!-- Private Feedback Form (For Ratings 1 to 3) -->
-    <div id="feedback-form-container" class="hidden" style="margin-top: 20px; text-align: left;">
-      <p style="font-weight: 600; font-size: 0.9rem; color: #374151;">We're sorry to hear that. Please let us know how we can improve:</p>
+    <!-- Private Feedback Form (Triggered for Ratings 1 to 3) -->
+    <div id="feedback-form-container" class="feedback-card hidden">
+      <p style="font-weight: 600; font-size: 0.9rem; color: #374151; margin-top: 0;">We're sorry to hear that. Please let us know how we can improve:</p>
       <form id="feedback-form">
-        <label class="form-label">Your Feedback *</label>
-        <textarea id="fb-comments" class="form-input" rows="4" placeholder="Tell us what went wrong..." required></textarea>
+        <label class="form-label" style="display: block; margin-top: 10px; font-size: 0.85rem; font-weight: 600;">Your Feedback *</label>
+        <textarea id="fb-comments" class="form-input" rows="4" placeholder="Tell us what went wrong..." required style="width: 100%; box-sizing: border-box; margin-top: 4px; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;"></textarea>
 
-        <label class="form-label">Name (Optional)</label>
-        <input type="text" id="fb-name" class="form-input" placeholder="Your name">
+        <label class="form-label" style="display: block; margin-top: 10px; font-size: 0.85rem; font-weight: 600;">Name (Optional)</label>
+        <input type="text" id="fb-name" class="form-input" placeholder="Your name" style="width: 100%; box-sizing: border-box; margin-top: 4px; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
 
-        <label class="form-label">Phone / Contact (Optional)</label>
-        <input type="tel" id="fb-phone" class="form-input" placeholder="Your contact number">
+        <label class="form-label" style="display: block; margin-top: 10px; font-size: 0.85rem; font-weight: 600;">Phone / Contact (Optional)</label>
+        <input type="tel" id="fb-phone" class="form-input" placeholder="Your contact number" style="width: 100%; box-sizing: border-box; margin-top: 4px; padding: 8px; border: 1px solid #d1d5db; border-radius: 6px;">
 
-        <button type="submit" class="action-btn btn-add" style="width: 100%; padding: 12px; margin-top: 10px;">Submit Feedback</button>
+        <button type="submit" class="action-btn btn-add" style="width: 100%; padding: 12px; margin-top: 16px; background-color: #4f46e5; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer;">Submit Feedback</button>
       </form>
     </div>
 
     <!-- Thank You Message -->
-    <div id="thank-you-msg" class="hidden" style="margin-top: 20px; padding: 16px; background: #dcfce7; border-radius: 8px; color: #166534;">
-      <h3>Thank You!</h3>
-      <p>Your feedback has been submitted directly to the owner.</p>
+    <div id="thank-you-msg" class="hidden" style="margin-top: 20px; padding: 16px; background: #dcfce7; border: 1px solid #bbf7d0; border-radius: 8px; color: #166534;">
+      <h3 style="margin-top: 0; margin-bottom: 8px;">Thank You!</h3>
+      <p style="margin: 0; font-size: 0.9rem;">Your feedback has been submitted directly to the owner.</p>
     </div>
 
     <!-- Social Links Block -->
@@ -63,6 +67,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/main.js?v=2"></script>
+  <script type="module" src="js/review.js?v=2"></script>
 </body>
 </html>
