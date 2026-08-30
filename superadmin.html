@@ -36,6 +36,7 @@
     <p class="subtitle" id="auth-status">Authenticating...</p>
 
     <div id="admin-content" class="hidden">
+      <!-- High-Level Platform Overview -->
       <div class="metrics-grid">
         <div class="metric-card"><div class="metric-num" id="stat-biz">0</div><div>Businesses</div></div>
         <div class="metric-card"><div class="metric-num" id="stat-reps">0</div><div>Sales Reps</div></div>
@@ -43,6 +44,7 @@
         <div class="metric-card"><div class="metric-num" id="stat-fb">0</div><div>Private Feedbacks</div></div>
       </div>
 
+      <!-- Add New Sales Rep Section -->
       <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
         <h4 style="margin-top:0; margin-bottom: 10px;">Create New Sales Rep Token</h4>
         <div class="rep-form-container">
@@ -51,6 +53,7 @@
         </div>
       </div>
 
+      <!-- Onboarded Businesses Overview Header with Add Business Button -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
         <h3 style="margin: 0;">Onboarded Businesses</h3>
         <button type="button" id="open-add-modal-btn" class="action-btn btn-add">➕ Add Business</button>
@@ -73,6 +76,7 @@
     </div>
   </div>
 
+  <!-- Modal 1: Add New Business Modal -->
   <div id="add-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <h3 style="margin-top: 0;">Onboard New Business</h3>
@@ -108,6 +112,7 @@
     </div>
   </div>
 
+  <!-- Modal 2: Edit Business Modal -->
   <div id="edit-modal" class="modal-overlay hidden">
     <div class="modal-card">
       <h3 style="margin-top: 0;">Edit Business</h3>
@@ -137,6 +142,6 @@
     </div>
   </div>
 
-  <script type="module" src="js/superadmin.js?v=3"></script>
+  <script type="module" src="js/superadmin.js?v=4"></script>
 </body>
 </html>
