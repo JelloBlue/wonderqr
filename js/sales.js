@@ -79,7 +79,7 @@ if (!repToken) {
       .update({ status: 'assigned' })
       .eq('id', qrData.id);
 
-    const ownerDashboardUrl = `${window.location.origin}/admin.html?token=${bizData.auth_token}`;
+    const ownerDashboardUrl = `${window.location.origin}/wonderqr/admin.html?token=${bizData.auth_token}`;
     document.getElementById('owner-link-output').value = ownerDashboardUrl;
     document.getElementById('onboard-form').classList.add('hidden');
     document.getElementById('success-screen').classList.remove('hidden');
