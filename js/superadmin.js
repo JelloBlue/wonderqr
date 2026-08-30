@@ -20,6 +20,20 @@ if (adminPass !== MASTER_KEY) {
     alert(`${label} copied to clipboard!`);
   };
 
+  // Open / Close Modals
+  document.getElementById('open-add-modal-btn').addEventListener('click', () => {
+    document.getElementById('add-biz-form').reset();
+    document.getElementById('add-modal').classList.remove('hidden');
+  });
+
+  document.getElementById('close-add-modal-btn').addEventListener('click', () => {
+    document.getElementById('add-modal').classList.add('hidden');
+  });
+
+  document.getElementById('close-edit-modal-btn').addEventListener('click', () => {
+    document.getElementById('edit-modal').classList.add('hidden');
+  });
+
   window.openEditModal = function(bizId) {
     const biz = loadedBusinesses.find(b => b.id === bizId);
     if (!biz) return;
@@ -34,10 +48,6 @@ if (adminPass !== MASTER_KEY) {
     document.getElementById('edit-modal').classList.remove('hidden');
   };
 
-  document.getElementById('close-modal-btn').addEventListener('click', () => {
-    document.getElementById('edit-modal').classList.add('hidden');
-  });
-
   async function loadDashboard() {
     // 1. Metrics
     const { count: bizCount } = await supabase.from('businesses').select('*', { count: 'exact', head: true });
@@ -50,7 +60,15 @@ if (adminPass !== MASTER_KEY) {
     document.getElementById('stat-qr').innerText = qrCount || 0;
     document.getElementById('stat-fb').innerText = fbCount || 0;
 
-    // 2. Query Businesses + QR Codes + Sales Reps
+    // 2. Fetch Sales Reps for dropdown
+    const { data: salesReps } = await supabase.from('sales_reps').select('id, rep_name').eq('active', true);
+    const repSelect = document.getElementById('add-rep-select');
+    repSelect.innerHTML = '<option value="">Direct Admin (No Rep)</option>';
+    (salesReps || []).forEach(r => {
+      repSelect.innerHTML += `<option value="${r.id}">${r.rep_name}</option>`;
+    });
+
+    // 3. Query Businesses + QR Codes + Sales Reps
     const { data: businesses, error } = await supabase
       .from('businesses')
       .select(`
@@ -60,9 +78,7 @@ if (adminPass !== MASTER_KEY) {
       `)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      console.error("Error loading dashboard data:", error);
-    }
+    if (error) console.error("Error loading dashboard data:", error);
 
     loadedBusinesses = businesses || [];
     const tbody = document.getElementById('businesses-tbody');
@@ -74,7 +90,7 @@ if (adminPass !== MASTER_KEY) {
       const qrCode = b.qr_codes?.code || '';
       const customerUrl = `${baseUrl}/?qr=${encodeURIComponent(qrCode)}`;
       const ownerUrl = `${baseUrl}/admin.html?token=${b.auth_token}`;
-      const repName = b.sales_reps?.rep_name || 'Unassigned';
+      const repName = b.sales_reps?.rep_name || 'Direct Admin';
 
       tbody.innerHTML += `
         <tr>
@@ -94,7 +110,63 @@ if (adminPass !== MASTER_KEY) {
     });
   }
 
-  // 3. Handle Business Update Submit
+  // 4. Handle Direct Business Onboarding from Super Admin
+  document.getElementById('add-biz-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const qrCode = document.getElementById('add-qr-code').value.trim();
+    const bizName = document.getElementById('add-biz-name').value.trim();
+    const googleUrl = document.getElementById('add-google-url').value.trim();
+    const ownerName = document.getElementById('add-owner-name').value.trim();
+    const repId = document.getElementById('add-rep-select').value || null;
+    const whatsapp = document.getElementById('add-whatsapp').value.trim() || null;
+    const phone = document.getElementById('add-phone').value.trim() || null;
+
+    // Check QR code validity
+    const { data: qrData, error: qrErr } = await supabase
+      .from('qr_codes')
+      .select('id')
+      .eq('code', qrCode)
+      .eq('status', 'available')
+      .single();
+
+    if (qrErr || !qrData) {
+      alert("QR Code not available or already assigned!");
+      return;
+    }
+
+    // Insert new business
+    const { data: bizData, error: bizErr } = await supabase
+      .from('businesses')
+      .insert([{
+        qr_code_id: qrData.id,
+        business_name: bizName,
+        google_review_url: googleUrl,
+        owner_name: ownerName,
+        sales_rep_id: repId,
+        whatsapp_number: whatsapp,
+        phone_number: phone
+      }])
+      .select('auth_token')
+      .single();
+
+    if (bizErr) {
+      alert("Failed to onboard business: " + bizErr.message);
+      return;
+    }
+
+    // Update QR code status
+    await supabase
+      .from('qr_codes')
+      .update({ status: 'assigned' })
+      .eq('id', qrData.id);
+
+    alert("Business Onboarded Successfully!");
+    document.getElementById('add-modal').classList.add('hidden');
+    loadDashboard();
+  });
+
+  // 5. Handle Business Update Submit
   document.getElementById('edit-biz-form').addEventListener('submit', async (e) => {
     e.preventDefault();
     const bizId = document.getElementById('edit-biz-id').value;
@@ -118,7 +190,7 @@ if (adminPass !== MASTER_KEY) {
     }
   });
 
-  // 4. Generate Sales Rep Tokens
+  // 6. Generate Sales Rep Tokens
   document.getElementById('create-rep-btn').addEventListener('click', async () => {
     const name = document.getElementById('new-rep-name').value.trim();
     if (!name) return alert("Enter rep name");
