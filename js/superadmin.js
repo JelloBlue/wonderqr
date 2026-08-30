@@ -15,9 +15,29 @@ if (adminPass !== MASTER_KEY) {
 
   let loadedBusinesses = [];
 
+  // Expose global window helper for copying links
   window.copyText = function(text, label) {
     navigator.clipboard.writeText(text);
     alert(`${label} copied to clipboard!`);
+  };
+
+  // Expose global window function for edit modal trigger
+  window.openEditModal = function(bizId) {
+    const biz = loadedBusinesses.find(b => b.id === bizId);
+    if (!biz) {
+      console.error("Business not found for ID:", bizId);
+      return;
+    }
+
+    document.getElementById('edit-biz-id').value = biz.id || '';
+    document.getElementById('edit-biz-name').value = biz.business_name || '';
+    document.getElementById('edit-owner-name').value = biz.owner_name || '';
+    document.getElementById('edit-google-url').value = biz.google_review_url || '';
+    document.getElementById('edit-whatsapp').value = biz.whatsapp_number || '';
+    document.getElementById('edit-phone').value = biz.phone_number || '';
+
+    const editModal = document.getElementById('edit-modal');
+    if (editModal) editModal.classList.remove('hidden');
   };
 
   function setupListener(id, event, callback) {
@@ -38,51 +58,40 @@ if (adminPass !== MASTER_KEY) {
     document.getElementById('edit-modal').classList.add('hidden');
   });
 
-  window.openEditModal = function(bizId) {
-    const biz = loadedBusinesses.find(b => b.id === bizId);
-    if (!biz) return;
-
-    document.getElementById('edit-biz-id').value = biz.id;
-    document.getElementById('edit-biz-name').value = biz.business_name || '';
-    document.getElementById('edit-owner-name').value = biz.owner_name || '';
-    document.getElementById('edit-google-url').value = biz.google_review_url || '';
-    document.getElementById('edit-whatsapp').value = biz.whatsapp_number || '';
-    document.getElementById('edit-phone').value = biz.phone_number || '';
-
-    document.getElementById('edit-modal').classList.remove('hidden');
-  };
-
   async function loadDashboard() {
-    // 1. Metrics Overview
-    const { count: bizCount, error: bizCntErr } = await supabase.from('businesses').select('*', { count: 'exact', head: true });
-    const { count: repsCount, error: repsCntErr } = await supabase.from('sales_reps').select('*', { count: 'exact', head: true });
-    
-    // Case-insensitive status check for assigned QR codes
-    const { count: qrCount, error: qrCntErr } = await supabase
+    // 1. Fetch Metrics Data
+    const { count: bizCount } = await supabase.from('businesses').select('*', { count: 'exact', head: true });
+    const { count: repsCount } = await supabase.from('sales_reps').select('*', { count: 'exact', head: true });
+    const { count: fbCount } = await supabase.from('feedback').select('*', { count: 'exact', head: true });
+
+    // Try counting status = 'assigned' case-insensitively
+    let { count: qrCount } = await supabase
       .from('qr_codes')
       .select('*', { count: 'exact', head: true })
       .ilike('status', 'assigned');
-      
-    const { count: fbCount, error: fbCntErr } = await supabase.from('feedback').select('*', { count: 'exact', head: true });
 
-    if (bizCntErr) console.error("Error fetching biz metric:", bizCntErr);
-    if (repsCntErr) console.error("Error fetching reps metric:", repsCntErr);
-    if (qrCntErr) console.error("Error fetching QR metric:", qrCntErr);
-    if (fbCntErr) console.error("Error fetching feedback metric:", fbCntErr);
+    // Fallback: If status column returns 0, count businesses with assigned qr_code_id
+    if (!qrCount || qrCount === 0) {
+      const { count: assignedBizQr } = await supabase
+        .from('businesses')
+        .select('qr_code_id', { count: 'exact', head: true })
+        .not('qr_code_id', 'is', null);
+      qrCount = assignedBizQr || 0;
+    }
 
     document.getElementById('stat-biz').innerText = bizCount || 0;
     document.getElementById('stat-reps').innerText = repsCount || 0;
     document.getElementById('stat-qr').innerText = qrCount || 0;
     document.getElementById('stat-fb').innerText = fbCount || 0;
 
-    // 2. Fetch Base Tables for Data Mapping
+    // 2. Fetch Base Tables Data
     const { data: salesReps } = await supabase.from('sales_reps').select('*').order('created_at', { ascending: false });
     const { data: qrCodes } = await supabase.from('qr_codes').select('id, code');
     const { data: businesses, error } = await supabase.from('businesses').select('*').order('created_at', { ascending: false });
 
-    if (error) console.error("Error fetching businesses list:", error);
+    if (error) console.error("Error fetching businesses:", error);
 
-    // Populate Sales Rep Select Dropdown in Modal
+    // Populate Sales Rep Select Options inside Add Business Modal
     const repSelect = document.getElementById('add-rep-select');
     if (repSelect) {
       repSelect.innerHTML = '<option value="">Direct Admin (No Rep)</option>';
@@ -115,11 +124,13 @@ if (adminPass !== MASTER_KEY) {
       });
     }
 
+    // Save fetched businesses into the global variable so window.openEditModal can access it
+    loadedBusinesses = businesses || [];
+
     // Render Onboarded Businesses Table
     const repMap = new Map((salesReps || []).map(r => [r.id, r.rep_name]));
     const qrMap = new Map((qrCodes || []).map(q => [q.id, q.code]));
 
-    loadedBusinesses = businesses || [];
     const tbody = document.getElementById('businesses-tbody');
     tbody.innerHTML = '';
 
@@ -149,7 +160,7 @@ if (adminPass !== MASTER_KEY) {
     });
   }
 
-  // 3. Handle Direct Business Onboarding from Super Admin
+  // 3. Onboard Business Handler
   setupListener('add-biz-form', 'submit', async (e) => {
     e.preventDefault();
 
@@ -161,20 +172,17 @@ if (adminPass !== MASTER_KEY) {
     const whatsapp = document.getElementById('add-whatsapp').value.trim() || null;
     const phone = document.getElementById('add-phone').value.trim() || null;
 
-    // Check QR code availability
     const { data: qrData, error: qrErr } = await supabase
       .from('qr_codes')
       .select('id')
       .ilike('code', qrCode)
-      .ilike('status', 'available')
       .single();
 
     if (qrErr || !qrData) {
-      alert("QR Code not available or already assigned!");
+      alert("QR Code not found!");
       return;
     }
 
-    // Insert new business
     const { error: bizErr } = await supabase
       .from('businesses')
       .insert([{
@@ -192,7 +200,7 @@ if (adminPass !== MASTER_KEY) {
       return;
     }
 
-    // Update QR code status to assigned
+    // Automatically update QR code status to 'assigned'
     await supabase
       .from('qr_codes')
       .update({ status: 'assigned' })
@@ -203,7 +211,7 @@ if (adminPass !== MASTER_KEY) {
     loadDashboard();
   });
 
-  // 4. Handle Edit Business Form Submit
+  // 4. Edit Business Handler
   setupListener('edit-biz-form', 'submit', async (e) => {
     e.preventDefault();
     const bizId = document.getElementById('edit-biz-id').value;
@@ -227,7 +235,7 @@ if (adminPass !== MASTER_KEY) {
     }
   });
 
-  // 5. Generate Sales Rep Tokens
+  // 5. Generate Sales Rep Token Handler
   setupListener('create-rep-btn', 'click', async () => {
     const name = document.getElementById('new-rep-name').value.trim();
     if (!name) return alert("Enter rep name");
