@@ -5,7 +5,7 @@ const urlParams = new URLSearchParams(window.location.search);
 const adminPass = urlParams.get('key');
 
 // Replace 'YOUR_MASTER_SECRET' with your preferred secret key string
-const MASTER_KEY = 'Akshaya@131211'; 
+const MASTER_KEY = '131211'; 
 
 if (adminPass !== MASTER_KEY) {
   document.getElementById('auth-status').innerText = "Access Denied: Invalid Master Key.";
