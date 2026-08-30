@@ -70,10 +70,30 @@ if (adminPass !== MASTER_KEY) {
     const { data: salesReps } = await supabase.from('sales_reps').select('*').order('created_at', { ascending: false });
     const { data: qrCodes } = await supabase.from('qr_codes').select('id, code');
     const { data: businesses, error } = await supabase.from('businesses').select('*').order('created_at', { ascending: false });
+    const { data: feedbackData } = await supabase.from('feedback').select('business_id, rating');
 
     if (error) console.error("Error fetching businesses:", error);
 
     window.loadedBusinesses = businesses || [];
+
+    // Map ratings by business_id
+    const ratingStatsMap = new Map();
+    (feedbackData || []).forEach(item => {
+      if (!item.business_id) return;
+      
+      if (!ratingStatsMap.has(item.business_id)) {
+        ratingStatsMap.set(item.business_id, {
+          total: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0
+        });
+      }
+
+      const stats = ratingStatsMap.get(item.business_id);
+      stats.total += 1;
+      const rating = Number(item.rating);
+      if (rating >= 1 && rating <= 5) {
+        stats[rating] += 1;
+      }
+    });
 
     const repSelect = document.getElementById('add-rep-select');
     if (repSelect) {
@@ -120,12 +140,21 @@ if (adminPass !== MASTER_KEY) {
       const ownerUrl = `${baseUrl}/admin.html?token=${b.auth_token}`;
       const repName = repMap.get(b.sales_rep_id) || 'Direct Admin';
 
+      const stats = ratingStatsMap.get(b.id) || { total: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+
       tbody.innerHTML += `
         <tr>
           <td><strong>${b.business_name}</strong></td>
           <td>${b.owner_name}</td>
           <td><code>${qrCode || 'N/A'}</code></td>
           <td>${repName}</td>
+          <td>
+            <div style="font-size: 0.78rem; line-height: 1.45;">
+              <strong>Total Reviews: ${stats.total}</strong><br>
+              ⭐5: ${stats[5]} | ⭐4: ${stats[4]}<br>
+              ⭐3: ${stats[3]} | ⭐2: ${stats[2]} | ⭐1: ${stats[1]}
+            </div>
+          </td>
           <td>
             <div style="display: flex; flex-wrap: wrap; gap: 4px;">
               <button class="action-btn btn-copy" onclick="copyText('${customerUrl}', 'Customer Review Link')">Copy Customer Link</button>
@@ -217,7 +246,7 @@ if (adminPass !== MASTER_KEY) {
       console.error("Update failed:", error);
       alert("Failed to update business: " + error.message);
     } else if (!data || data.length === 0) {
-      alert("Update blocked: Row Level Security (RLS) prevented saving this row. Ensure Step 1 SQL query is run in Supabase.");
+      alert("Update blocked by Row Level Security (RLS). Make sure RLS is enabled/configured properly in Supabase.");
     } else {
       alert("Business updated successfully!");
       const editModal = document.getElementById('edit-modal');
