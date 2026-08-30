@@ -16,6 +16,10 @@ if (adminPass !== MASTER_KEY) {
   window.loadedBusinesses = [];
 
   window.copyText = function(text, label) {
+    if (!text || text === 'undefined') {
+      alert(`Cannot copy ${label}: Link parameter is missing.`);
+      return;
+    }
     navigator.clipboard.writeText(text);
     alert(`${label} copied to clipboard!`);
   };
@@ -76,7 +80,7 @@ if (adminPass !== MASTER_KEY) {
 
     window.loadedBusinesses = businesses || [];
 
-    // Map ratings by business_id
+    // Map rating feedback values per business
     const ratingStatsMap = new Map();
     (feedbackData || []).forEach(item => {
       if (!item.business_id) return;
@@ -103,6 +107,7 @@ if (adminPass !== MASTER_KEY) {
       });
     }
 
+    // Render Sales Reps Table
     const repsTbody = document.getElementById('reps-tbody');
     if (repsTbody) {
       repsTbody.innerHTML = '';
@@ -113,22 +118,23 @@ if (adminPass !== MASTER_KEY) {
         const statusClass = r.active !== false ? 'badge-active' : 'badge-inactive';
         const statusText = r.active !== false ? 'Active' : 'Inactive';
 
-        repsTbody.innerHTML += `
-          <tr>
-            <td><strong>${r.rep_name}</strong></td>
-            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
-            <td><code>${r.access_token || 'N/A'}</code></td>
-            <td>
-              <button class="action-btn btn-copy" onclick="copyText('${repPortalUrl}', 'Sales Rep Portal Link')">Copy Rep Link</button>
-            </td>
-          </tr>
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${r.rep_name || 'N/A'}</strong></td>
+          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+          <td><code>${r.access_token || 'N/A'}</code></td>
+          <td>
+            <button type="button" class="action-btn btn-copy" onclick="copyText('${repPortalUrl}', 'Sales Rep Portal Link')">Copy Rep Link</button>
+          </td>
         `;
+        repsTbody.appendChild(tr);
       });
     }
 
     const repMap = new Map((salesReps || []).map(r => [r.id, r.rep_name]));
     const qrMap = new Map((qrCodes || []).map(q => [q.id, q.code]));
 
+    // Render Businesses Table
     const tbody = document.getElementById('businesses-tbody');
     tbody.innerHTML = '';
 
@@ -137,33 +143,32 @@ if (adminPass !== MASTER_KEY) {
     window.loadedBusinesses.forEach(b => {
       const qrCode = qrMap.get(b.qr_code_id) || '';
       const customerUrl = `${baseUrl}/?qr=${encodeURIComponent(qrCode)}`;
-      const ownerUrl = `${baseUrl}/admin.html?token=${b.auth_token}`;
+      const ownerUrl = `${baseUrl}/admin.html?token=${b.auth_token || ''}`;
       const repName = repMap.get(b.sales_rep_id) || 'Direct Admin';
-
       const stats = ratingStatsMap.get(b.id) || { total: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
-      tbody.innerHTML += `
-        <tr>
-          <td><strong>${b.business_name}</strong></td>
-          <td>${b.owner_name}</td>
-          <td><code>${qrCode || 'N/A'}</code></td>
-          <td>${repName}</td>
-          <td>
-            <div style="font-size: 0.78rem; line-height: 1.45;">
-              <strong>Total Reviews: ${stats.total}</strong><br>
-              ⭐5: ${stats[5]} | ⭐4: ${stats[4]}<br>
-              ⭐3: ${stats[3]} | ⭐2: ${stats[2]} | ⭐1: ${stats[1]}
-            </div>
-          </td>
-          <td>
-            <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-              <button class="action-btn btn-copy" onclick="copyText('${customerUrl}', 'Customer Review Link')">Copy Customer Link</button>
-              <button class="action-btn btn-copy" style="background-color: #6366f1;" onclick="copyText('${ownerUrl}', 'Owner Dashboard Link')">Copy Owner Link</button>
-              <button class="action-btn btn-edit" onclick="openEditModal('${b.id}')">Edit</button>
-            </div>
-          </td>
-        </tr>
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td><strong>${b.business_name || 'N/A'}</strong></td>
+        <td>${b.owner_name || 'N/A'}</td>
+        <td><code>${qrCode || 'N/A'}</code></td>
+        <td>${repName}</td>
+        <td>
+          <div style="font-size: 0.78rem; line-height: 1.45;">
+            <strong>Total: ${stats.total}</strong><br>
+            ⭐5: ${stats[5]} | ⭐4: ${stats[4]}<br>
+            ⭐3: ${stats[3]} | ⭐2: ${stats[2]} | ⭐1: ${stats[1]}
+          </div>
+        </td>
+        <td>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px;">
+            <button type="button" class="action-btn btn-copy" onclick="copyText('${customerUrl}', 'Customer Review Link')">Copy Customer Link</button>
+            <button type="button" class="action-btn btn-copy" style="background-color: #6366f1;" onclick="copyText('${ownerUrl}', 'Owner Dashboard Link')">Copy Owner Link</button>
+            <button type="button" class="action-btn btn-edit" onclick="openEditModal('${b.id}')">Edit</button>
+          </div>
+        </td>
       `;
+      tbody.appendChild(tr);
     });
   }
 
@@ -246,7 +251,7 @@ if (adminPass !== MASTER_KEY) {
       console.error("Update failed:", error);
       alert("Failed to update business: " + error.message);
     } else if (!data || data.length === 0) {
-      alert("Update blocked by Row Level Security (RLS). Make sure RLS is enabled/configured properly in Supabase.");
+      alert("Update blocked by Row Level Security (RLS). Please check your update permissions in Supabase.");
     } else {
       alert("Business updated successfully!");
       const editModal = document.getElementById('edit-modal');
