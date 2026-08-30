@@ -79,8 +79,16 @@ if (!repToken) {
       .update({ status: 'assigned' })
       .eq('id', qrData.id);
 
-    const ownerDashboardUrl = `${window.location.origin}/wonderqr/admin.html?token=${bizData.auth_token}`;
+    // Build absolute URLs including GitHub Pages subfolder (/wonderqr/)
+    const baseUrl = `${window.location.origin}/wonderqr`;
+    const customerUrl = `${baseUrl}/?qr=${encodeURIComponent(qrCode)}`;
+    const ownerDashboardUrl = `${baseUrl}/admin.html?token=${bizData.auth_token}`;
+
+    // Populate both output fields on the success screen
+    document.getElementById('customer-link-output').value = customerUrl;
     document.getElementById('owner-link-output').value = ownerDashboardUrl;
+
+    // Toggle visibility
     document.getElementById('onboard-form').classList.add('hidden');
     document.getElementById('success-screen').classList.remove('hidden');
   });
