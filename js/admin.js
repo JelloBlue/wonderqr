@@ -15,7 +15,7 @@ async function loadDashboard() {
     return;
   }
 
-  // 1. Authenticate owner token and fetch the specific business record
+  // 1. Authenticate owner token and retrieve the specific business record
   const { data: business, error: bizError } = await supabase
     .from('businesses')
     .select('id, business_name')
@@ -28,15 +28,15 @@ async function loadDashboard() {
     return;
   }
 
-  // Update page heading with business name if present
+  // Dynamically update header if title element exists in HTML
   const bizTitleEl = document.getElementById('business-title');
   if (bizTitleEl) bizTitleEl.innerText = business.business_name;
 
-  // 2. Fetch feedback ONLY for this specific business ID
+  // 2. Fetch feedback ONLY for this specific business ID (Prevents cross-talk bug)
   const { data: feedbackData, error: fbError } = await supabase
     .from('feedback')
     .select('*')
-    .eq('business_id', business.id) // <-- Critical filter to isolate business reviews
+    .eq('business_id', business.id)
     .order('created_at', { ascending: false });
 
   if (fbError) {
@@ -54,7 +54,7 @@ async function loadDashboard() {
     return;
   }
 
-  // 3. Render private feedback cards
+  // 3. Render private feedback cards safely
   if (listContainer) {
     listContainer.innerHTML = feedbacks.map(item => `
       <div class="feedback-card">
