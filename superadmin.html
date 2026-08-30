@@ -42,7 +42,7 @@
     <p class="subtitle" id="auth-status">Authenticating...</p>
 
     <div id="admin-content" class="hidden">
-      <!-- High-Level Platform Overview -->
+      <!-- Metrics Overview -->
       <div class="metrics-grid">
         <div class="metric-card"><div class="metric-num" id="stat-biz">0</div><div>Businesses</div></div>
         <div class="metric-card"><div class="metric-num" id="stat-reps">0</div><div>Sales Reps</div></div>
@@ -50,7 +50,7 @@
         <div class="metric-card"><div class="metric-num" id="stat-fb">0</div><div>Private Feedbacks</div></div>
       </div>
 
-      <!-- Add New Sales Rep Section -->
+      <!-- Create Sales Rep Section -->
       <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
         <h4 style="margin-top:0; margin-bottom: 10px;">Create New Sales Rep Token</h4>
         <div class="rep-form-container">
@@ -59,7 +59,7 @@
         </div>
       </div>
 
-      <!-- Sales Reps Overview Table -->
+      <!-- Sales Reps Table -->
       <h3>Active Sales Reps & Onboarding Links</h3>
       <div style="overflow-x: auto;">
         <table class="data-table">
@@ -75,7 +75,7 @@
         </table>
       </div>
 
-      <!-- Onboarded Businesses Overview Header with Add Business Button -->
+      <!-- Onboarded Businesses Table Header -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; margin-top: 32px;">
         <h3 style="margin: 0;">Onboarded Businesses</h3>
         <button type="button" id="open-add-modal-btn" class="action-btn btn-add">➕ Add Business</button>
@@ -164,6 +164,34 @@
     </div>
   </div>
 
-  <script type="module" src="js/superadmin.js?v=6"></script>
+  <!-- Global Handler to Trigger Edit Modal reliably -->
+  <script>
+    function openEditModal(bizId) {
+      if (!window.loadedBusinesses || window.loadedBusinesses.length === 0) {
+        console.error("Businesses data not loaded yet.");
+        return;
+      }
+
+      const biz = window.loadedBusinesses.find(b => String(b.id) === String(bizId));
+      if (!biz) {
+        console.error("Business not found for ID:", bizId);
+        return;
+      }
+
+      document.getElementById('edit-biz-id').value = biz.id || '';
+      document.getElementById('edit-biz-name').value = biz.business_name || '';
+      document.getElementById('edit-owner-name').value = biz.owner_name || '';
+      document.getElementById('edit-google-url').value = biz.google_review_url || '';
+      document.getElementById('edit-whatsapp').value = biz.whatsapp_number || '';
+      document.getElementById('edit-phone').value = biz.phone_number || '';
+
+      const editModal = document.getElementById('edit-modal');
+      if (editModal) {
+        editModal.classList.remove('hidden');
+        editModal.style.display = 'flex';
+      }
+    }
+  </script>
+  <script type="module" src="js/superadmin.js?v=8"></script>
 </body>
 </html>
