@@ -1,0 +1,122 @@
+:root {
+  --primary: #4f46e5;
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --text: #0f172a;
+  --text-muted: #64748b;
+  --star-gold: #f59e0b;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+}
+
+.container {
+  width: 90%;
+  max-width: 420px;
+  background: var(--card);
+  padding: 2rem;
+  border-radius: 1rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+h1, h2 { margin-top: 0; }
+.subtitle { color: var(--text-muted); font-size: 0.95rem; margin-bottom: 1.5rem; }
+
+.star-rating {
+  font-size: 2.5rem;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.star { color: #cbd5e1; transition: color 0.2s; }
+.star.active { color: var(--star-gold); }
+
+.form-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  display: block;
+  margin-bottom: 0.25rem;
+}
+
+.form-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  margin-bottom: 0.85rem;
+  font-family: inherit;
+}
+
+textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+  resize: vertical;
+  font-family: inherit;
+}
+
+button {
+  width: 100%;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.85rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+button:hover { opacity: 0.9; }
+
+/* Action & Social Buttons */
+.social-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.action-btn {
+  display: block;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.btn-wa { background-color: #25D366; }
+.btn-call { background-color: #0284c7; }
+.btn-ig { background-color: #E1306C; }
+.btn-yt { background-color: #FF0000; }
+
+.feedback-card {
+  text-align: left;
+  border-bottom: 1px solid #e2e8f0;
+  padding: 1rem 0;
+}
+.feedback-card:last-child { border-bottom: none; }
+.feedback-stars { color: var(--star-gold); font-size: 1.1rem; }
+.feedback-date { font-size: 0.8rem; color: var(--text-muted); }
+.feedback-msg { margin-top: 0.5rem; font-size: 0.95rem; }
+.hidden { display: none !important; }
