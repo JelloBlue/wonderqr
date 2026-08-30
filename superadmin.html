@@ -11,9 +11,12 @@
     .metric-card { background: #f9fafb; border: 1px solid #e5e7eb; padding: 16px; border-radius: 8px; text-align: center; }
     .metric-num { font-size: 1.8rem; font-weight: bold; color: #4f46e5; }
     
-    .rep-form-container { display: flex; flex-direction: column; gap: 10px; }
+    /* Sales Rep Input Form Styling (Widened for Desktop) */
+    .rep-form-container { display: flex; flex-direction: column; gap: 10px; width: 100%; }
     @media (min-width: 600px) {
-      .rep-form-container { flex-direction: row; }
+      .rep-form-container { flex-direction: row; align-items: center; max-width: 650px; }
+      .rep-form-container #new-rep-name { flex: 2; width: 100%; }
+      .rep-form-container #create-rep-btn { flex: 1; white-space: nowrap; }
     }
     
     .data-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 24px; text-align: left; }
@@ -53,7 +56,7 @@
       <div style="background: #f8fafc; padding: 16px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
         <h4 style="margin-top:0; margin-bottom: 10px;">Create New Sales Rep Token</h4>
         <div class="rep-form-container">
-          <input type="text" id="new-rep-name" class="form-input" placeholder="Sales Rep Name" style="flex: 1; margin: 0;">
+          <input type="text" id="new-rep-name" class="form-input" placeholder="Sales Rep Name" style="margin: 0;">
           <button type="button" id="create-rep-btn" class="action-btn btn-copy" style="padding: 10px 16px; font-size: 0.9rem;">Generate Token</button>
         </div>
       </div>
@@ -204,6 +207,6 @@
       }
     }
   </script>
-  <script type="module" src="js/superadmin.js?v=9"></script>
+  <script type="module" src="js/superadmin.js?v=10"></script>
 </body>
 </html>
