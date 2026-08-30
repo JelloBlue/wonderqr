@@ -3,7 +3,6 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const urlParams = new URLSearchParams(window.location.search);
 const adminPass = urlParams.get('key');
-
 const MASTER_KEY = '131211';
 
 if (adminPass !== MASTER_KEY) {
@@ -17,11 +16,47 @@ if (adminPass !== MASTER_KEY) {
 
   window.copyText = function(text, label) {
     if (!text || text === 'undefined') {
-      alert(`Cannot copy ${label}: Link parameter is missing.`);
+      alert(`Cannot copy ${label}: Missing link.`);
       return;
     }
     navigator.clipboard.writeText(text);
     alert(`${label} copied to clipboard!`);
+  };
+
+  // Generate & Display QR Modal Function
+  window.showQrModal = function(url, title = 'Customer QR Code') {
+    const modal = document.getElementById('qr-modal');
+    const container = document.getElementById('qr-canvas-container');
+    const titleEl = document.getElementById('qr-modal-title');
+    const urlEl = document.getElementById('qr-modal-url');
+    const downloadBtn = document.getElementById('download-qr-btn');
+
+    titleEl.innerText = title;
+    urlEl.innerText = url;
+    container.innerHTML = ''; 
+
+    // Generate high-resolution QR
+    new QRCode(container, {
+      text: url,
+      width: 200,
+      height: 200,
+      colorDark : "#000000",
+      colorLight : "#ffffff",
+      correctLevel : QRCode.CorrectLevel.H
+    });
+
+    setTimeout(() => {
+      const img = container.querySelector('img');
+      const canvas = container.querySelector('canvas');
+      if (img && img.src) {
+        downloadBtn.href = img.src;
+      } else if (canvas) {
+        downloadBtn.href = canvas.toDataURL("image/png");
+      }
+    }, 150);
+
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
   };
 
   function setupListener(id, event, callback) {
@@ -46,6 +81,12 @@ if (adminPass !== MASTER_KEY) {
     const editModal = document.getElementById('edit-modal');
     editModal.classList.add('hidden');
     editModal.style.display = 'none';
+  });
+
+  setupListener('close-qr-modal-btn', 'click', () => {
+    const qrModal = document.getElementById('qr-modal');
+    qrModal.classList.add('hidden');
+    qrModal.style.display = 'none';
   });
 
   async function loadDashboard() {
@@ -76,27 +117,20 @@ if (adminPass !== MASTER_KEY) {
     const { data: businesses, error } = await supabase.from('businesses').select('*').order('created_at', { ascending: false });
     const { data: feedbackData } = await supabase.from('feedback').select('business_id, rating');
 
-    if (error) console.error("Error fetching businesses:", error);
+    if (error) console.error("Error loading businesses:", error);
 
     window.loadedBusinesses = businesses || [];
 
-    // Map rating feedback values per business
     const ratingStatsMap = new Map();
     (feedbackData || []).forEach(item => {
       if (!item.business_id) return;
-      
       if (!ratingStatsMap.has(item.business_id)) {
-        ratingStatsMap.set(item.business_id, {
-          total: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0
-        });
+        ratingStatsMap.set(item.business_id, { total: 0, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 });
       }
-
       const stats = ratingStatsMap.get(item.business_id);
       stats.total += 1;
-      const rating = Number(item.rating);
-      if (rating >= 1 && rating <= 5) {
-        stats[rating] += 1;
-      }
+      const r = Number(item.rating);
+      if (r >= 1 && r <= 5) stats[r] += 1;
     });
 
     const repSelect = document.getElementById('add-rep-select');
@@ -107,7 +141,7 @@ if (adminPass !== MASTER_KEY) {
       });
     }
 
-    // Render Sales Reps Table
+    // Render Sales Reps
     const repsTbody = document.getElementById('reps-tbody');
     if (repsTbody) {
       repsTbody.innerHTML = '';
@@ -115,16 +149,13 @@ if (adminPass !== MASTER_KEY) {
 
       (salesReps || []).forEach(r => {
         const repPortalUrl = `${baseUrl}/sales.html?rep_token=${r.access_token}`;
-        const statusClass = r.active !== false ? 'badge-active' : 'badge-inactive';
-        const statusText = r.active !== false ? 'Active' : 'Inactive';
-
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong>${r.rep_name || 'N/A'}</strong></td>
-          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+          <td><span class="status-badge ${r.active !== false ? 'badge-active' : 'badge-inactive'}">${r.active !== false ? 'Active' : 'Inactive'}</span></td>
           <td><code>${r.access_token || 'N/A'}</code></td>
           <td>
-            <button type="button" class="action-btn btn-copy" onclick="copyText('${repPortalUrl}', 'Sales Rep Portal Link')">Copy Rep Link</button>
+            <button type="button" class="action-btn btn-copy" onclick="copyText('${repPortalUrl}', 'Sales Rep Link')">Copy Rep Link</button>
           </td>
         `;
         repsTbody.appendChild(tr);
@@ -134,10 +165,9 @@ if (adminPass !== MASTER_KEY) {
     const repMap = new Map((salesReps || []).map(r => [r.id, r.rep_name]));
     const qrMap = new Map((qrCodes || []).map(q => [q.id, q.code]));
 
-    // Render Businesses Table
+    // Render Businesses
     const tbody = document.getElementById('businesses-tbody');
     tbody.innerHTML = '';
-
     const baseUrl = `${window.location.origin}/wonderqr`;
 
     window.loadedBusinesses.forEach(b => {
@@ -162,8 +192,9 @@ if (adminPass !== MASTER_KEY) {
         </td>
         <td>
           <div style="display: flex; flex-wrap: wrap; gap: 4px;">
-            <button type="button" class="action-btn btn-copy" onclick="copyText('${customerUrl}', 'Customer Review Link')">Copy Customer Link</button>
-            <button type="button" class="action-btn btn-copy" style="background-color: #6366f1;" onclick="copyText('${ownerUrl}', 'Owner Dashboard Link')">Copy Owner Link</button>
+            <button type="button" class="action-btn btn-copy" onclick="copyText('${customerUrl}', 'Customer Link')">Copy Link</button>
+            <button type="button" class="action-btn btn-qr" onclick="showQrModal('${customerUrl}', '${b.business_name} QR')">Generate QR</button>
+            <button type="button" class="action-btn btn-copy" style="background-color: #6366f1;" onclick="copyText('${ownerUrl}', 'Owner Link')">Copy Owner Link</button>
             <button type="button" class="action-btn btn-edit" onclick="openEditModal('${b.id}')">Edit</button>
           </div>
         </td>
@@ -174,7 +205,6 @@ if (adminPass !== MASTER_KEY) {
 
   setupListener('add-biz-form', 'submit', async (e) => {
     e.preventDefault();
-
     const qrCode = document.getElementById('add-qr-code').value.trim();
     const bizName = document.getElementById('add-biz-name').value.trim();
     const googleUrl = document.getElementById('add-google-url').value.trim();
@@ -185,52 +215,34 @@ if (adminPass !== MASTER_KEY) {
     const instaUrl = document.getElementById('add-instagram-url').value.trim() || null;
     const ytUrl = document.getElementById('add-youtube-url').value.trim() || null;
 
-    const { data: qrData, error: qrErr } = await supabase
-      .from('qr_codes')
-      .select('id')
-      .ilike('code', qrCode)
-      .single();
+    const { data: qrData, error: qrErr } = await supabase.from('qr_codes').select('id').ilike('code', qrCode).single();
+    if (qrErr || !qrData) return alert("QR Code not found!");
 
-    if (qrErr || !qrData) {
-      alert("QR Code not found!");
-      return;
-    }
+    const { error: bizErr } = await supabase.from('businesses').insert([{
+      qr_code_id: qrData.id,
+      business_name: bizName,
+      google_review_url: googleUrl,
+      owner_name: ownerName,
+      sales_rep_id: repId,
+      whatsapp_number: whatsapp,
+      phone_number: phone,
+      instagram_url: instaUrl,
+      youtube_url: ytUrl
+    }]);
 
-    const { error: bizErr } = await supabase
-      .from('businesses')
-      .insert([{
-        qr_code_id: qrData.id,
-        business_name: bizName,
-        google_review_url: googleUrl,
-        owner_name: ownerName,
-        sales_rep_id: repId,
-        whatsapp_number: whatsapp,
-        phone_number: phone,
-        instagram_url: instaUrl,
-        youtube_url: ytUrl
-      }]);
+    if (bizErr) return alert("Failed to onboard: " + bizErr.message);
 
-    if (bizErr) {
-      alert("Failed to onboard business: " + bizErr.message);
-      return;
-    }
-
-    await supabase
-      .from('qr_codes')
-      .update({ status: 'assigned' })
-      .eq('id', qrData.id);
-
+    await supabase.from('qr_codes').update({ status: 'assigned' }).eq('id', qrData.id);
     alert("Business Onboarded Successfully!");
-    const addModal = document.getElementById('add-modal');
-    addModal.classList.add('hidden');
-    addModal.style.display = 'none';
+    
+    document.getElementById('add-modal').classList.add('hidden');
+    document.getElementById('add-modal').style.display = 'none';
     loadDashboard();
   });
 
   setupListener('edit-biz-form', 'submit', async (e) => {
     e.preventDefault();
     const bizId = document.getElementById('edit-biz-id').value;
-
     const updatedData = {
       business_name: document.getElementById('edit-biz-name').value.trim(),
       owner_name: document.getElementById('edit-owner-name').value.trim(),
@@ -241,22 +253,13 @@ if (adminPass !== MASTER_KEY) {
       youtube_url: document.getElementById('edit-youtube-url').value.trim() || null
     };
 
-    const { error, data } = await supabase
-      .from('businesses')
-      .update(updatedData)
-      .eq('id', bizId)
-      .select();
-
+    const { error } = await supabase.from('businesses').update(updatedData).eq('id', bizId);
     if (error) {
-      console.error("Update failed:", error);
-      alert("Failed to update business: " + error.message);
-    } else if (!data || data.length === 0) {
-      alert("Update blocked by Row Level Security (RLS). Please check your update permissions in Supabase.");
+      alert("Failed to update: " + error.message);
     } else {
       alert("Business updated successfully!");
-      const editModal = document.getElementById('edit-modal');
-      editModal.classList.add('hidden');
-      editModal.style.display = 'none';
+      document.getElementById('edit-modal').classList.add('hidden');
+      document.getElementById('edit-modal').style.display = 'none';
       await loadDashboard();
     }
   });
@@ -267,9 +270,8 @@ if (adminPass !== MASTER_KEY) {
 
     const newToken = crypto.randomUUID();
     const { error } = await supabase.from('sales_reps').insert([{ rep_name: name, access_token: newToken, active: true }]);
-
     if (error) {
-      alert("Failed to create rep token: " + error.message);
+      alert("Error: " + error.message);
     } else {
       const repUrl = `${window.location.origin}/wonderqr/sales.html?rep_token=${newToken}`;
       prompt("Sales Rep Token Created! Copy their portal URL:", repUrl);
