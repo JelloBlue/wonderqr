@@ -14,17 +14,27 @@ async function init() {
     return;
   }
 
+  // Pre-printed QR codes can be scanned before activation. We therefore allow
+  // both available and assigned codes to be resolved here. An available code
+  // will never expose business data; it simply shows the not-yet-activated state.
   const { data: qrData, error: qrErr } = await supabase
     .from('qr_codes')
     .select('id, code, status')
     .eq('code', qrCode)
-    .eq('status', 'assigned')
-    .single();
+    .in('status', ['available', 'assigned'])
+    .maybeSingle();
 
   if (qrErr || !qrData) {
     console.error('QR lookup failed:', qrErr);
     setText('biz-name', 'QR Code Not Found');
     setText('biz-subtitle', 'Please scan a valid WonderQR code.');
+    return;
+  }
+
+  // Only an assigned QR can resolve to business information.
+  if (qrData.status !== 'assigned') {
+    setText('biz-name', 'WonderQR');
+    setText('biz-subtitle', 'This QR code is not activated yet. Please check back after activation.');
     return;
   }
 
