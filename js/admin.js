@@ -4,11 +4,9 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const urlParams = new URLSearchParams(window.location.search);
 let token = urlParams.get('token');
 
-// Storage Handling: Save token to localStorage if present in URL
 if (token) {
   localStorage.setItem('admin_auth_token', token);
 } else {
-  // If launching PWA without URL params, retrieve saved token from localStorage
   token = localStorage.getItem('admin_auth_token');
 }
 
@@ -16,53 +14,112 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 async function loadDashboard() {
   const subtitleEl = document.getElementById('dashboard-subtitle');
-  const listContainer = document.getElementById('feedback-list');
 
   if (!token) {
-    if (subtitleEl) subtitleEl.innerText = "Access Denied: Missing auth token. Please open your unique dashboard link first.";
+    if (subtitleEl) subtitleEl.innerText = "Access Denied: Missing auth token.";
     return;
   }
 
-  // 1. Authenticate owner token and retrieve the specific business record
+  // Fetch business details
   const { data: business, error: bizError } = await supabase
     .from('businesses')
-    .select('id, business_name')
+    .select('id, business_name, slug')
     .eq('auth_token', token)
     .single();
 
   if (bizError || !business) {
-    console.error("Authentication Error:", bizError);
     if (subtitleEl) subtitleEl.innerText = "Unauthorized: Invalid business token.";
-    localStorage.removeItem('admin_auth_token');
     return;
   }
 
   const bizTitleEl = document.getElementById('business-title');
   if (bizTitleEl) bizTitleEl.innerText = business.business_name;
 
-  // 2. Fetch feedback ONLY for this specific business ID
-  const { data: feedbackData, error: fbError } = await supabase
+  // Generate Review Board with QR
+  generateStandee(business.slug || business.id);
+
+  // Load Feedback
+  loadFeedback(business.id);
+}
+
+function generateStandee(businessSlug) {
+  const canvas = document.getElementById('standee-canvas');
+  const ctx = canvas.getContext('2d');
+  const hiddenQrDiv = document.getElementById('qrcode-hidden');
+  const downloadBtn = document.getElementById('download-standee-btn');
+
+  // Customer facing feedback URL
+  const targetUrl = `${window.location.origin}/index.html?biz=${businessSlug}`;
+
+  // 1. Generate QR Code into hidden container
+  hiddenQrDiv.innerHTML = "";
+  new QRCode(hiddenQrDiv, {
+    text: targetUrl,
+    width: 600,
+    height: 600,
+    colorDark: "#000000",
+    colorLight: "#ffffff",
+    correctLevel: QRCode.CorrectLevel.H
+  });
+
+  // 2. Load background design
+  const bgImage = new Image();
+  bgImage.src = 'Scan To Review.jpg';
+
+  bgImage.onload = () => {
+    // High-resolution 4x6 Canvas setup (1200 x 1800 px)
+    canvas.width = bgImage.naturalWidth || 1200;
+    canvas.height = bgImage.naturalHeight || 1800;
+
+    // Draw background design
+    ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
+
+    // 3. Extract generated QR image and overlay on canvas
+    setTimeout(() => {
+      const qrImg = hiddenQrDiv.querySelector('img');
+      if (qrImg && qrImg.src) {
+        const qrOverlay = new Image();
+        qrOverlay.src = qrImg.src;
+        qrOverlay.onload = () => {
+          // Bounding dimensions for the green box in the template
+          const qrSize = canvas.width * 0.35; 
+          const qrX = (canvas.width - qrSize) / 2;
+          const qrY = canvas.height * 0.465;
+
+          // Draw QR Code centered inside green box
+          ctx.drawImage(qrOverlay, qrX, qrY, qrSize, qrSize);
+        };
+      }
+    }, 300);
+  };
+
+  // 4. Handle high-res PNG download
+  downloadBtn.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = `Review-Board-4x6.png`;
+    link.href = canvas.toDataURL('image/png', 1.0);
+    link.click();
+  });
+}
+
+async function loadFeedback(businessId) {
+  const subtitleEl = document.getElementById('dashboard-subtitle');
+  const listContainer = document.getElementById('feedback-list');
+
+  const { data: feedbackData } = await supabase
     .from('feedback')
     .select('*')
-    .eq('business_id', business.id)
+    .eq('business_id', businessId)
     .order('created_at', { ascending: false });
 
-  if (fbError) {
-    console.error("Error fetching feedback:", fbError);
-    if (subtitleEl) subtitleEl.innerText = "Error loading private feedback.";
-    return;
-  }
-
   const feedbacks = feedbackData || [];
-
-  if (subtitleEl) subtitleEl.innerText = `Total Complaints: ${feedbacks.length}`;
+  if (subtitleEl) subtitleEl.innerText = `Total Reviews: ${feedbacks.length}`;
 
   if (feedbacks.length === 0) {
     if (listContainer) listContainer.innerHTML = "<p>No negative feedback reported yet!</p>";
     return;
   }
 
-  // 3. Render private feedback cards safely
   if (listContainer) {
     listContainer.innerHTML = feedbacks.map(item => `
       <div class="feedback-card">
