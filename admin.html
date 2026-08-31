@@ -5,199 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Owner Feedback Dashboard - WonderQR</title>
 
-  <!-- Favicon & PWA App Setup -->
+  <!-- Favicon & Basic Manifest -->
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="favicon.png">
-  <link id="manifest-link" rel="manifest" href="manifest.json">
+  <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0d4734">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="WonderQR Admin">
 
   <link rel="stylesheet" href="css/style.css">
-
-  <style>
-    /* Top Install Bar Styling */
-    .top-install-bar {
-      background: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      border-radius: 12px;
-      padding: 12px 16px;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 12px;
-    }
-
-    .install-text {
-      font-size: 0.88rem;
-      color: #166534;
-      font-weight: 600;
-      margin: 0;
-    }
-
-    .install-pwa-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background-color: #0d4734;
-      color: #ffffff;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.85rem;
-      cursor: pointer;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-      white-space: nowrap;
-      transition: background-color 0.2s, transform 0.1s;
-    }
-
-    .install-pwa-btn:hover {
-      background-color: #15803d;
-    }
-
-    .install-pwa-btn:active {
-      transform: scale(0.97);
-    }
-
-    /* iOS Safari Helper Banner */
-    .ios-install-banner {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      color: #1e40af;
-      padding: 12px 16px;
-      border-radius: 10px;
-      margin-bottom: 20px;
-      font-size: 0.85rem;
-      line-height: 1.4;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-  </style>
 </head>
 <body>
   <div class="container">
-
-    <!-- Sticky Top PWA Banner -->
-    <div id="pwa-top-bar" class="top-install-bar hidden">
-      <p class="install-text">📲 Install app for quick home screen access</p>
-      <button id="pwa-install-btn" class="install-pwa-btn">
-        Add App
-      </button>
-    </div>
-
-    <!-- Instructions banner displayed exclusively on iOS Safari devices -->
-    <div id="ios-prompt" class="ios-install-banner hidden">
-      <strong>Install on iPhone:</strong> Tap the <strong>Share</strong> button 
-      <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M16 5l-4-4-4 4h3v9h2V5h3zm4 8v9H4v-9H2v9c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-9h-2z"/></svg> 
-      in Safari, then select <strong>"Add to Home Screen"</strong>.
-    </div>
-    
-    <!-- Title Section -->
     <h1 id="dashboard-title">Private Feedback</h1>
     <p class="subtitle" id="dashboard-subtitle">Loading your reviews...</p>
 
     <!-- Content List -->
     <div id="feedback-list"></div>
-
   </div>
 
   <script type="module" src="js/admin.js"></script>
-
-  <!-- Service Worker Registration & Dynamic PWA Logic -->
-  <script>
-    // 1. Register Service Worker to meet PWA criteria
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./sw.js')
-        .then(() => console.log('PWA Service Worker registered.'))
-        .catch(err => console.error('SW Registration Failed:', err));
-    }
-
-    // 2. Token persistence & Dynamic Manifest construction
-    const urlParams = new URLSearchParams(window.location.search);
-    let token = urlParams.get('token');
-
-    if (token) {
-      localStorage.setItem('admin_auth_token', token);
-    } else {
-      token = localStorage.getItem('admin_auth_token');
-    }
-
-    if (token) {
-      const dynamicManifest = {
-        "name": "WonderQR Admin Dashboard",
-        "short_name": "WonderQR Admin",
-        "start_url": `./admin.html?token=${token}`,
-        "display": "standalone",
-        "background_color": "#0d4734",
-        "theme_color": "#0d4734",
-        "icons": [
-          { "src": "favicon.png", "sizes": "192x192", "type": "image/png" },
-          { "src": "favicon.png", "sizes": "512x512", "type": "image/png" }
-        ]
-      };
-
-      const stringManifest = JSON.stringify(dynamicManifest);
-      const blob = new Blob([stringManifest], { type: 'application/json' });
-      const manifestURL = URL.createObjectURL(blob);
-      const manifestLink = document.getElementById('manifest-link');
-      if (manifestLink) {
-        manifestLink.setAttribute('href', manifestURL);
-      }
-    }
-
-    // 3. UI Install Bar Display Logic
-    let deferredPrompt;
-    const topBar = document.getElementById('pwa-top-bar');
-    const installBtn = document.getElementById('pwa-install-btn');
-    const iosPrompt = document.getElementById('ios-prompt');
-
-    const isIos = () => {
-      const userAgent = window.navigator.userAgent.toLowerCase();
-      return /iphone|ipad|ipod/.test(userAgent);
-    };
-
-    const isStandalone = () => {
-      return (window.matchMedia('(display-mode: standalone)').matches) || (window.navigator.standalone === true);
-    };
-
-    // Show top install bar on standard browsers (Hide only if launched inside PWA standalone mode)
-    if (!isStandalone()) {
-      if (isIos()) {
-        iosPrompt.classList.remove('hidden');
-      } else {
-        topBar.classList.remove('hidden');
-      }
-    }
-
-    // Capture native Chrome install prompt event
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-    });
-
-    installBtn.addEventListener('click', async () => {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          console.log('App added to home screen.');
-        }
-        deferredPrompt = null;
-        topBar.classList.add('hidden');
-      } else {
-        alert('To install: Tap your browser menu (⋮ or ⋯) and select "Add to Home screen" or "Install app".');
-      }
-    });
-
-    window.addEventListener('appinstalled', () => {
-      topBar.classList.add('hidden');
-      iosPrompt.classList.add('hidden');
-    });
-  </script>
 </body>
 </html>
