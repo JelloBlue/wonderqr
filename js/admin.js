@@ -30,6 +30,7 @@ async function loadDashboard() {
   if (bizError || !business) {
     console.error("Auth lookup failed:", bizError);
     if (subtitleEl) subtitleEl.innerText = "Unauthorized: Invalid business token.";
+    // Clear the bad token from storage so it doesn't stay stuck
     localStorage.removeItem('admin_auth_token');
     return;
   }
