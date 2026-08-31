@@ -4,7 +4,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 const urlParams = new URLSearchParams(window.location.search);
 let token = urlParams.get('token');
 
-// 1. Storage Handling: Save token to localStorage if present in URL
+// Storage Handling: Save token to localStorage if present in URL
 if (token) {
   localStorage.setItem('admin_auth_token', token);
 } else {
@@ -23,7 +23,7 @@ async function loadDashboard() {
     return;
   }
 
-  // 2. Authenticate owner token and retrieve the specific business record
+  // 1. Authenticate owner token and retrieve the specific business record
   const { data: business, error: bizError } = await supabase
     .from('businesses')
     .select('id, business_name')
@@ -33,16 +33,14 @@ async function loadDashboard() {
   if (bizError || !business) {
     console.error("Authentication Error:", bizError);
     if (subtitleEl) subtitleEl.innerText = "Unauthorized: Invalid business token.";
-    // Clear invalid token if stored
     localStorage.removeItem('admin_auth_token');
     return;
   }
 
-  // Dynamically update header if title element exists in HTML
   const bizTitleEl = document.getElementById('business-title');
   if (bizTitleEl) bizTitleEl.innerText = business.business_name;
 
-  // 3. Fetch feedback ONLY for this specific business ID (Prevents cross-talk bug)
+  // 2. Fetch feedback ONLY for this specific business ID
   const { data: feedbackData, error: fbError } = await supabase
     .from('feedback')
     .select('*')
@@ -64,7 +62,7 @@ async function loadDashboard() {
     return;
   }
 
-  // 4. Render private feedback cards safely
+  // 3. Render private feedback cards safely
   if (listContainer) {
     listContainer.innerHTML = feedbacks.map(item => `
       <div class="feedback-card">
