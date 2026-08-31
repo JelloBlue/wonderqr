@@ -28,12 +28,8 @@ async function init() {
     return;
   }
 
-  const { data: bizData, error: bizErr } = await supabase
-    .from('public_businesses')
-    .select('id, qr_code_id, business_name, google_review_url, instagram_url, youtube_url, whatsapp_number, phone_number, owner_name, active')
-    .eq('qr_code_id', qrData.id)
-    .eq('active', true)
-    .single();
+  const { data: bizRows, error: bizErr } = await supabase.rpc('get_public_business_by_qr', { p_qr_code: qrData.code });
+  const bizData = Array.isArray(bizRows) ? bizRows[0] : bizRows;
 
   if (bizErr || !bizData) {
     console.error('Business lookup failed:', bizErr);
