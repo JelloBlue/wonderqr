@@ -1,4 +1,4 @@
-// Basic service worker to satisfy Chrome PWA install requirements
+// Service worker to meet PWA installation criteria
 self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
@@ -8,6 +8,5 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  // Pass-through network requests
   event.respondWith(fetch(event.request));
 });
