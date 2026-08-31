@@ -4,16 +4,137 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Owner Feedback Dashboard - WonderQR</title>
+
+  <!-- Favicon & PWA App Setup -->
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="apple-touch-icon" href="favicon.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0d4734">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="WonderQR Admin">
+
   <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    /* Admin Install Button & PWA Header Styling */
+    .dashboard-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .install-pwa-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: #0d4734;
+      color: #ffffff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+      transition: background-color 0.2s, transform 0.1s;
+    }
+
+    .install-pwa-btn:hover {
+      background-color: #15803d;
+    }
+
+    .install-pwa-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* iOS Safari Helper Banner */
+    .ios-install-banner {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      color: #1e40af;
+      padding: 12px 14px;
+      border-radius: 10px;
+      margin-bottom: 16px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
-    <h1 id="dashboard-title">Private Feedback</h1>
+    
+    <!-- Top Header Area with Dynamic PWA Install Button -->
+    <div class="dashboard-header">
+      <h1 id="dashboard-title" style="margin: 0;">Private Feedback</h1>
+      <button id="pwa-install-btn" class="install-pwa-btn hidden">
+        📲 Add to Home Screen
+      </button>
+    </div>
+
+    <!-- Instructions banner displayed exclusively on iOS Safari devices -->
+    <div id="ios-prompt" class="ios-install-banner hidden">
+      <strong>Install on iPhone:</strong> Tap the <strong>Share</strong> button 
+      <svg width="14" height="14" fill="currentColor" viewBox="0 0 24 24"><path d="M16 5l-4-4-4 4h3v9h2V5h3zm4 8v9H4v-9H2v9c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-9h-2z"/></svg> 
+      in Safari, then select <strong>"Add to Home Screen"</strong>.
+    </div>
+
     <p class="subtitle" id="dashboard-subtitle">Loading your reviews...</p>
 
     <div id="feedback-list"></div>
   </div>
 
   <script type="module" src="js/admin.js"></script>
+
+  <!-- Script handling home screen app installation logic -->
+  <script>
+    let deferredPrompt;
+    const installBtn = document.getElementById('pwa-install-btn');
+    const iosPrompt = document.getElementById('ios-prompt');
+
+    const isIos = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      return /iphone|ipad|ipod/.test(userAgent);
+    };
+
+    const isStandalone = () => {
+      return (window.matchMedia('(display-mode: standalone)').matches) || (window.navigator.standalone === true);
+    };
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (!isStandalone()) {
+        installBtn.classList.remove('hidden');
+      }
+    });
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('App successfully added to home screen.');
+      }
+      deferredPrompt = null;
+      installBtn.classList.add('hidden');
+    });
+
+    if (isIos() && !isStandalone()) {
+      iosPrompt.classList.remove('hidden');
+    }
+
+    window.addEventListener('appinstalled', () => {
+      installBtn.classList.add('hidden');
+      iosPrompt.classList.add('hidden');
+    });
+  </script>
 </body>
 </html>
