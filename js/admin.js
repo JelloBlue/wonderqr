@@ -71,7 +71,7 @@ function generateStandee(identifier) {
     correctLevel: QRCode.CorrectLevel.H
   });
 
-  // 2. Load background image template (.png extension fixed)
+  // 2. Load background image template (Using .png extension)
   const bgImage = new Image();
   bgImage.src = 'Scan To Review.png';
 
