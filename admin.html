@@ -8,7 +8,7 @@
   <!-- Favicon & PWA App Setup -->
   <link rel="icon" type="image/png" href="favicon.png">
   <link rel="apple-touch-icon" href="favicon.png">
-  <link rel="manifest" href="manifest.json">
+  <link id="manifest-link" rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#0d4734">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -93,8 +93,37 @@
 
   <script type="module" src="js/admin.js"></script>
 
-  <!-- Script handling home screen app installation logic -->
+  <!-- Dynamic PWA Manifest and Install Logic -->
   <script>
+    // 1. DYNAMIC MANIFEST GENERATION (Fixes Android isolated storage bug)
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token') || localStorage.getItem('admin_auth_token');
+
+    if (token) {
+      // Create a dynamic blob manifest that includes the token in the PWA start URL
+      const dynamicManifest = {
+        "name": "WonderQR Admin Dashboard",
+        "short_name": "WonderQR Admin",
+        "start_url": `./admin.html?token=${token}`,
+        "display": "standalone",
+        "background_color": "#0d4734",
+        "theme_color": "#0d4734",
+        "icons": [
+          { "src": "favicon.png", "sizes": "192x192", "type": "image/png" },
+          { "src": "favicon.png", "sizes": "512x512", "type": "image/png" }
+        ]
+      };
+
+      const stringManifest = JSON.stringify(dynamicManifest);
+      const blob = new Blob([stringManifest], {type: 'application/json'});
+      const manifestURL = URL.createObjectURL(blob);
+      const manifestLink = document.getElementById('manifest-link');
+      if (manifestLink) {
+        manifestLink.setAttribute('href', manifestURL);
+      }
+    }
+
+    // 2. INSTALL PROMPT LOGIC
     let deferredPrompt;
     const installBtn = document.getElementById('pwa-install-btn');
     const iosPrompt = document.getElementById('ios-prompt');
@@ -121,7 +150,7 @@
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
-        console.log('App successfully added to home screen.');
+        console.log('App successfully added to home screen with token.');
       }
       deferredPrompt = null;
       installBtn.classList.add('hidden');
