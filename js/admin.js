@@ -2,7 +2,15 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 const urlParams = new URLSearchParams(window.location.search);
-const token = urlParams.get('token');
+let token = urlParams.get('token');
+
+// 1. Storage Handling: Save token to localStorage if present in URL
+if (token) {
+  localStorage.setItem('admin_auth_token', token);
+} else {
+  // If launching PWA without URL params, retrieve saved token from localStorage
+  token = localStorage.getItem('admin_auth_token');
+}
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -11,11 +19,11 @@ async function loadDashboard() {
   const listContainer = document.getElementById('feedback-list');
 
   if (!token) {
-    if (subtitleEl) subtitleEl.innerText = "Access Denied: Missing auth token.";
+    if (subtitleEl) subtitleEl.innerText = "Access Denied: Missing auth token. Please open your unique dashboard link first.";
     return;
   }
 
-  // 1. Authenticate owner token and retrieve the specific business record
+  // 2. Authenticate owner token and retrieve the specific business record
   const { data: business, error: bizError } = await supabase
     .from('businesses')
     .select('id, business_name')
@@ -25,6 +33,8 @@ async function loadDashboard() {
   if (bizError || !business) {
     console.error("Authentication Error:", bizError);
     if (subtitleEl) subtitleEl.innerText = "Unauthorized: Invalid business token.";
+    // Clear invalid token if stored
+    localStorage.removeItem('admin_auth_token');
     return;
   }
 
@@ -32,7 +42,7 @@ async function loadDashboard() {
   const bizTitleEl = document.getElementById('business-title');
   if (bizTitleEl) bizTitleEl.innerText = business.business_name;
 
-  // 2. Fetch feedback ONLY for this specific business ID (Prevents cross-talk bug)
+  // 3. Fetch feedback ONLY for this specific business ID (Prevents cross-talk bug)
   const { data: feedbackData, error: fbError } = await supabase
     .from('feedback')
     .select('*')
@@ -54,7 +64,7 @@ async function loadDashboard() {
     return;
   }
 
-  // 3. Render private feedback cards safely
+  // 4. Render private feedback cards safely
   if (listContainer) {
     listContainer.innerHTML = feedbacks.map(item => `
       <div class="feedback-card">
