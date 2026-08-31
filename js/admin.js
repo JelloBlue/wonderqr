@@ -2,21 +2,13 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 
 const urlParams = new URLSearchParams(window.location.search);
-let token = urlParams.get('token');
+let token = urlParams.get('token') || localStorage.getItem('admin_auth_token');
 
-if (token) {
-  localStorage.setItem('admin_auth_token', token);
-} else {
-  token = localStorage.getItem('admin_auth_token');
-}
+if (token) localStorage.setItem('admin_auth_token', token);
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// Owner token is required by the current Supabase RLS policy when reading feedback.
 const ownerSupabase = token
-  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-      global: { headers: { 'x-owner-token': token } }
-    })
+  ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { global: { headers: { 'x-owner-token': token } } })
   : supabase;
 
 const businessTitleEl = document.getElementById('business-title');
@@ -28,9 +20,10 @@ const downloadBtn = document.getElementById('download-standee-btn');
 const feedbackList = document.getElementById('feedback-list');
 
 function setStatus(message, type = 'loading') {
-  if (!statusEl) return;
-  statusEl.textContent = message;
-  statusEl.className = `status ${type}`;
+  if (statusEl) {
+    statusEl.textContent = message;
+    statusEl.className = `status ${type}`;
+  }
 }
 
 async function loadDashboard() {
@@ -43,15 +36,15 @@ async function loadDashboard() {
 
     setStatus('Authenticating...', 'loading');
 
-    const { data: business, error: businessError } = await supabase
+    const { data: business, error } = await supabase
       .from('businesses')
-      .select(`*, qr_codes ( id, code, status )`)
+      .select('*, qr_codes(id, code, status)')
       .eq('auth_token', token)
       .maybeSingle();
 
-    if (businessError) {
-      console.error('Business lookup error:', businessError);
-      setStatus(`Database error: ${businessError.message}`, 'error');
+    if (error) {
+      console.error('Business lookup error:', error);
+      setStatus(`Database error: ${error.message}`, 'error');
       return;
     }
 
@@ -62,23 +55,18 @@ async function loadDashboard() {
       return;
     }
 
-    if (businessTitleEl) {
-      businessTitleEl.textContent = business.business_name || 'WonderQR Business';
-    }
+    if (businessTitleEl) businessTitleEl.textContent = business.business_name || 'WonderQR Business';
 
-    const qrRelation = Array.isArray(business.qr_codes)
-      ? business.qr_codes[0]
-      : business.qr_codes;
-
+    const qrRelation = Array.isArray(business.qr_codes) ? business.qr_codes[0] : business.qr_codes;
     const qrCode = qrRelation?.code || null;
 
-    if (!qrCode) {
-      setStatus('Business found, but no QR code is assigned.', 'error');
-      if (subtitleEl) subtitleEl.textContent = 'Please assign a QR code to this business.';
-    } else {
+    if (qrCode) {
       setStatus(`Connected • QR Code: ${qrCode}`, 'success');
       if (subtitleEl) subtitleEl.textContent = `QR Code: ${qrCode}`;
       await generateStandee(qrCode);
+    } else {
+      setStatus('Business found, but no QR code is assigned.', 'error');
+      if (subtitleEl) subtitleEl.textContent = 'Please assign a QR code to this business.';
     }
 
     await loadFeedback(business.id);
@@ -90,7 +78,6 @@ async function loadDashboard() {
 
 async function generateStandee(qrCode) {
   if (!canvas || !hiddenQrDiv) return;
-
   if (typeof QRCode === 'undefined') {
     setStatus('QR generator library failed to load.', 'error');
     return;
@@ -99,13 +86,10 @@ async function generateStandee(qrCode) {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  // review.js reads ?qr=..., so the generated QR must use the same parameter.
-  const targetUrl = `${window.location.origin}/wonderqr/index.html?qr=${encodeURIComponent(qrCode)}`;
-
+  const targetUrl = `${window.location.origin}${window.location.pathname.replace(/admin\.html$/, 'index.html')}?qr=${encodeURIComponent(qrCode)}`;
   console.log('Customer QR URL:', targetUrl);
 
   hiddenQrDiv.innerHTML = '';
-
   new QRCode(hiddenQrDiv, {
     text: targetUrl,
     width: 600,
@@ -124,15 +108,12 @@ async function generateStandee(qrCode) {
 
     await wait(500);
 
-    let qrSource = null;
     const qrCanvas = hiddenQrDiv.querySelector('canvas');
     const qrImg = hiddenQrDiv.querySelector('img');
+    let qrSource = null;
 
-    if (qrCanvas) {
-      qrSource = qrCanvas.toDataURL('image/png');
-    } else if (qrImg?.src) {
-      qrSource = qrImg.src;
-    }
+    if (qrCanvas) qrSource = qrCanvas.toDataURL('image/png');
+    else if (qrImg?.src) qrSource = qrImg.src;
 
     if (!qrSource) {
       setStatus('QR image could not be generated.', 'error');
@@ -145,7 +126,6 @@ async function generateStandee(qrCode) {
       const qrX = (canvas.width - qrSize) / 2;
       const qrY = canvas.height * 0.465;
       ctx.drawImage(qrOverlay, qrX, qrY, qrSize, qrSize);
-
       if (downloadBtn) downloadBtn.disabled = false;
       setStatus(`Review board ready • ${qrCode}`, 'success');
     };
@@ -153,9 +133,7 @@ async function generateStandee(qrCode) {
     qrOverlay.src = qrSource;
   };
 
-  bgImage.onerror = () => {
-    setStatus('Could not load Scan To Review.png.', 'error');
-  };
+  bgImage.onerror = () => setStatus('Could not load Scan To Review.png.', 'error');
   bgImage.src = 'Scan To Review.png';
 
   if (downloadBtn) {
@@ -177,10 +155,9 @@ async function generateStandee(qrCode) {
 
 async function loadFeedback(businessId) {
   if (!feedbackList) return;
-
   feedbackList.innerHTML = '<div class="empty-message">Loading feedback...</div>';
 
-  const { data: feedbackData, error } = await ownerSupabase
+  const { data, error } = await ownerSupabase
     .from('feedback')
     .select('id, business_id, rating, message, created_at')
     .eq('business_id', businessId)
@@ -192,13 +169,10 @@ async function loadFeedback(businessId) {
     return;
   }
 
-  const feedbacks = feedbackData || [];
+  const feedbacks = data || [];
+  if (subtitleEl && !subtitleEl.textContent.includes('QR Code:')) subtitleEl.textContent = `Total Feedback: ${feedbacks.length}`;
 
-  if (subtitleEl && !subtitleEl.textContent.includes('QR Code:')) {
-    subtitleEl.textContent = `Total Feedback: ${feedbacks.length}`;
-  }
-
-  if (feedbacks.length === 0) {
+  if (!feedbacks.length) {
     feedbackList.innerHTML = '<div class="empty-message">No negative feedback reported yet.</div>';
     return;
   }
@@ -206,26 +180,13 @@ async function loadFeedback(businessId) {
   feedbackList.innerHTML = feedbacks.map(item => {
     const rating = Math.min(3, Math.max(1, Number(item.rating) || 1));
     const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
-    const date = item.created_at
-      ? new Date(item.created_at).toLocaleString()
-      : 'Unknown date';
-    const message = item.message?.trim()
-      ? escapeHtml(item.message)
-      : '<em>No written message provided</em>';
-
-    return `
-      <div class="feedback-card">
-        <div class="feedback-stars">${stars}</div>
-        <div class="feedback-date">${escapeHtml(date)}</div>
-        <div class="feedback-msg">${message}</div>
-      </div>
-    `;
+    const date = item.created_at ? new Date(item.created_at).toLocaleString() : 'Unknown date';
+    const message = item.message?.trim() ? escapeHtml(item.message) : '<em>No written message provided</em>';
+    return `<div class="feedback-card"><div class="feedback-stars">${stars}</div><div class="feedback-date">${escapeHtml(date)}</div><div class="feedback-msg">${message}</div></div>`;
   }).join('');
 }
 
-function wait(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
+function wait(ms) { return new Promise(resolve => setTimeout(resolve, ms)); }
 
 function escapeHtml(value) {
   return String(value)
