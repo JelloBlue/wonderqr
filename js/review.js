@@ -3,7 +3,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 const urlParams = new URLSearchParams(window.location.search);
-const qrCode = urlParams.get('qr');
+const qrCode = (urlParams.get('qr') || '').trim();
 let currentBusiness = null;
 let selectedRating = 0;
 
@@ -14,41 +14,37 @@ async function init() {
     return;
   }
 
-  // Pre-printed QR codes can be scanned before activation. We therefore allow
-  // both available and assigned codes to be resolved here. An available code
-  // will never expose business data; it simply shows the not-yet-activated state.
-  const { data: qrData, error: qrErr } = await supabase
-    .from('qr_codes')
-    .select('id, code, status')
-    .eq('code', qrCode)
-    .in('status', ['available', 'assigned'])
-    .maybeSingle();
+  // Resolve through the SECURITY DEFINER public function. Directly querying
+  // qr_codes is blocked by RLS for some valid customer requests.
+  const { data, error } = await supabase.rpc('get_public_business_by_qr', {
+    p_qr_code: qrCode
+  });
 
-  if (qrErr || !qrData) {
-    console.error('QR lookup failed:', qrErr);
-    setText('biz-name', 'QR Code Not Found');
-    setText('biz-subtitle', 'Please scan a valid WonderQR code.');
+  if (error) {
+    console.error('QR/business lookup failed:', error);
+    setText('biz-name', 'Unable to load QR code');
+    setText('biz-subtitle', 'Please try again in a moment.');
     return;
   }
 
-  // Only an assigned QR can resolve to business information.
-  if (qrData.status !== 'assigned') {
+  const business = Array.isArray(data) ? data[0] : data;
+
+  // The function returns no business when the QR is available but not yet
+  // activated. This is intentional: the printed QR remains valid and will
+  // automatically work after it is assigned to a business.
+  if (!business) {
     setText('biz-name', 'WonderQR');
     setText('biz-subtitle', 'This QR code is not activated yet. Please check back after activation.');
     return;
   }
 
-  const { data: bizRows, error: bizErr } = await supabase.rpc('get_public_business_by_qr', { p_qr_code: qrData.code });
-  const bizData = Array.isArray(bizRows) ? bizRows[0] : bizRows;
-
-  if (bizErr || !bizData) {
-    console.error('Business lookup failed:', bizErr);
-    setText('biz-name', 'Business Not Registered');
+  if (business.active !== true) {
+    setText('biz-name', 'WonderQR');
     setText('biz-subtitle', 'This QR code is not currently active.');
     return;
   }
 
-  currentBusiness = bizData;
+  currentBusiness = business;
   setText('biz-name', currentBusiness.business_name || '');
   setupSocialLinks();
   setupStars();
