@@ -35,10 +35,9 @@ function setupJelloBlue(){
   section.style.cssText='margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;text-align:center;';
   section.innerHTML=`
     <div style="font-size:.7rem;color:#9ca3af;letter-spacing:.4px;margin-bottom:7px;">POWERED BY</div>
-    <button id="jello-blue-service-btn" type="button" style="width:100%;padding:11px 14px;border:1px solid #0d4734;border-radius:12px;background:#fff;color:#0d4734;font-weight:800;font-size:.84rem;cursor:pointer;box-shadow:0 3px 9px rgba(13,71,52,.10);">
-      JB &nbsp; Jello Blue · Business Growth Consultant
+    <button id="jello-blue-service-btn" type="button" style="width:100%;padding:11px 14px;border:1px solid #0d4734;border-radius:12px;background:#fff;color:#0d4734;font-weight:800;font-size:.9rem;cursor:pointer;box-shadow:0 3px 9px rgba(13,71,52,.10);">
+      JelloBlue
     </button>
-    <div style="font-size:.68rem;color:#6b7280;margin-top:7px;">Grow Smart. Grow Sustainable.</div>
   `;
   card.appendChild(section);
   document.getElementById('jello-blue-service-btn')?.addEventListener('click',openJelloBlueModal);
@@ -52,9 +51,9 @@ function openJelloBlueModal(){
     <div role="dialog" aria-modal="true" style="position:relative;width:100%;max-width:420px;max-height:90vh;overflow:auto;background:#fff;border-radius:20px;padding:24px 20px;text-align:center;box-sizing:border-box;box-shadow:0 20px 50px rgba(0,0,0,.3);">
       <button id="jello-blue-close" type="button" aria-label="Close" style="position:absolute;right:12px;top:10px;border:0;background:#f3f4f6;width:32px;height:32px;border-radius:50%;font-size:20px;color:#374151;cursor:pointer;">×</button>
       <a href="https://jelloblue.wixsite.com/jbt1/general-4-1" target="_blank" rel="noopener" style="display:block;text-decoration:none;">
-        <img src="https://jelloblue.wixsite.com/jbt1/general-4-1" alt="Jello Blue" style="max-width:170px;max-height:80px;object-fit:contain;margin:4px auto 12px;" onerror="this.style.display='none';">
+        <img src="https://jelloblue.wixsite.com/jbt1/general-4-1" alt="Jello Blue logo" style="max-width:170px;max-height:80px;object-fit:contain;margin:4px auto 12px;" onerror="this.style.display='none';">
       </a>
-      <div style="font-size:1.35rem;font-weight:900;color:#0d4734;">JB · Jello Blue</div>
+      <div style="font-size:1.35rem;font-weight:900;color:#0d4734;">JelloBlue</div>
       <div style="font-size:.78rem;letter-spacing:1.2px;font-weight:800;color:#15803d;margin-top:5px;">GROW SMART. GROW SUSTAINABLE.</div>
       <div style="font-size:.88rem;font-weight:800;color:#374151;margin-top:15px;">BUSINESS GROWTH CONSULTANT</div>
       <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:13px 0;">
@@ -69,10 +68,12 @@ function openJelloBlueModal(){
         • PROCESS AUTOMATION<br>
         • MEASURABLE RESULTS
       </div>
-      <div style="background:#f0fdf4;border-radius:12px;padding:12px;text-align:left;font-size:.84rem;line-height:1.7;">
-        <strong>Grow Smart. Grow Sustainable.</strong><br>
-        ✉️ <a href="mailto:care.jelloblue@gmail.com" style="color:#0d4734;font-weight:700;">care.jelloblue@gmail.com</a><br>
-        📱 <a href="tel:8639989443" style="color:#0d4734;font-weight:700;">8639989443</a>
+      <div style="background:#f0fdf4;border-radius:12px;padding:12px;text-align:center;font-size:.84rem;line-height:1.7;">
+        <strong>Grow Smart. Grow Sustainable.</strong>
+        <div style="display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-top:10px;">
+          <a href="https://wa.me/918639989443" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;justify-content:center;background:#25d366;color:#fff;text-decoration:none;padding:10px 14px;border-radius:9px;font-weight:800;font-size:.84rem;">WhatsApp</a>
+          <a href="mailto:care.jelloblue@gmail.com" style="display:inline-flex;align-items:center;justify-content:center;background:#0d4734;color:#fff;text-decoration:none;padding:10px 14px;border-radius:9px;font-weight:800;font-size:.84rem;">Mail</a>
+        </div>
       </div>
       <a href="https://jelloblue.wixsite.com/jbt1/general-4-1" target="_blank" rel="noopener" style="display:inline-block;margin-top:15px;background:#0d4734;color:#fff;text-decoration:none;padding:11px 20px;border-radius:10px;font-weight:800;font-size:.85rem;">Learn More</a>
     </div>`;
