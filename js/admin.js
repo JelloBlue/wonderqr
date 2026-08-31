@@ -28,7 +28,7 @@ async function loadDashboard() {
     .maybeSingle();
 
   if (bizError || !business) {
-    console.error("Auth lookup failed:", bizError || "No business matched this token.");
+    console.error("Auth lookup failed:", bizError);
     if (subtitleEl) subtitleEl.innerText = "Unauthorized: Invalid business token.";
     localStorage.removeItem('admin_auth_token');
     return;
@@ -55,11 +55,13 @@ function generateStandee(identifier) {
 
   if (!canvas || !hiddenQrDiv) return;
 
+  // Target landing page URL for customers
   const targetUrl = `https://jelloblue.github.io/wonderqr/index.html?biz=${identifier}`;
 
+  // Clear previous QR
   hiddenQrDiv.innerHTML = "";
 
-  // 1. Generate QR Code
+  // 1. Generate QR Code into hidden container
   new QRCode(hiddenQrDiv, {
     text: targetUrl,
     width: 600,
