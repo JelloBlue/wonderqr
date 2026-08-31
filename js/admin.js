@@ -20,39 +20,48 @@ async function loadDashboard() {
     return;
   }
 
-  // Fetch business details
+  // 1. Fetch business details safely
   const { data: business, error: bizError } = await supabase
     .from('businesses')
-    .select('id, business_name, slug')
+    .select('*')
     .eq('auth_token', token)
-    .single();
+    .maybeSingle();
 
   if (bizError || !business) {
+    console.error("Auth lookup failed:", bizError);
     if (subtitleEl) subtitleEl.innerText = "Unauthorized: Invalid business token.";
+    localStorage.removeItem('admin_auth_token');
     return;
   }
 
   const bizTitleEl = document.getElementById('business-title');
-  if (bizTitleEl) bizTitleEl.innerText = business.business_name;
+  if (bizTitleEl) bizTitleEl.innerText = business.business_name || "Private Feedback";
 
-  // Generate Review Board with QR
-  generateStandee(business.slug || business.id);
+  // Determine identifier to embed into QR URL
+  const qrIdentifier = business.slug || business.id;
 
-  // Load Feedback
+  // 2. Generate Review Board with QR
+  generateStandee(qrIdentifier);
+
+  // 3. Load Feedback
   loadFeedback(business.id);
 }
 
-function generateStandee(businessSlug) {
+function generateStandee(identifier) {
   const canvas = document.getElementById('standee-canvas');
   const ctx = canvas.getContext('2d');
   const hiddenQrDiv = document.getElementById('qrcode-hidden');
   const downloadBtn = document.getElementById('download-standee-btn');
 
-  // Customer facing feedback URL
-  const targetUrl = `${window.location.origin}/index.html?biz=${businessSlug}`;
+  if (!canvas || !hiddenQrDiv) return;
+
+  // Target landing page URL for customers
+  const targetUrl = `https://jelloblue.github.io/wonderqr/index.html?biz=${identifier}`;
+
+  // Clear previous QR
+  hiddenQrDiv.innerHTML = "";
 
   // 1. Generate QR Code into hidden container
-  hiddenQrDiv.innerHTML = "";
   new QRCode(hiddenQrDiv, {
     text: targetUrl,
     width: 600,
@@ -62,44 +71,43 @@ function generateStandee(businessSlug) {
     correctLevel: QRCode.CorrectLevel.H
   });
 
-  // 2. Load background design
+  // 2. Load background image template
   const bgImage = new Image();
   bgImage.src = 'Scan To Review.jpg';
 
   bgImage.onload = () => {
-    // High-resolution 4x6 Canvas setup (1200 x 1800 px)
     canvas.width = bgImage.naturalWidth || 1200;
     canvas.height = bgImage.naturalHeight || 1800;
 
-    // Draw background design
+    // Draw background
     ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
 
-    // 3. Extract generated QR image and overlay on canvas
+    // 3. Render QR Code inside the green box
     setTimeout(() => {
       const qrImg = hiddenQrDiv.querySelector('img');
       if (qrImg && qrImg.src) {
         const qrOverlay = new Image();
         qrOverlay.src = qrImg.src;
         qrOverlay.onload = () => {
-          // Bounding dimensions for the green box in the template
-          const qrSize = canvas.width * 0.35; 
+          const qrSize = canvas.width * 0.35;
           const qrX = (canvas.width - qrSize) / 2;
           const qrY = canvas.height * 0.465;
 
-          // Draw QR Code centered inside green box
           ctx.drawImage(qrOverlay, qrX, qrY, qrSize, qrSize);
         };
       }
-    }, 300);
+    }, 400);
   };
 
-  // 4. Handle high-res PNG download
-  downloadBtn.addEventListener('click', () => {
-    const link = document.createElement('a');
-    link.download = `Review-Board-4x6.png`;
-    link.href = canvas.toDataURL('image/png', 1.0);
-    link.click();
-  });
+  // 4. Handle Download
+  if (downloadBtn) {
+    downloadBtn.onclick = () => {
+      const link = document.createElement('a');
+      link.download = `Review-Board-4x6.png`;
+      link.href = canvas.toDataURL('image/png', 1.0);
+      link.click();
+    };
+  }
 }
 
 async function loadFeedback(businessId) {
