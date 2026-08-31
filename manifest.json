@@ -1,0 +1,20 @@
+{
+  "name": "WonderQR Owner Dashboard",
+  "short_name": "WonderQR",
+  "start_url": "/owner.html",
+  "display": "standalone",
+  "background_color": "#0d4734",
+  "theme_color": "#0d4734",
+  "icons": [
+    {
+      "src": "favicon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "favicon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
