@@ -50,10 +50,17 @@ async function openOwnerAdmin(){
 }
 
 function setupStars(){
-  const stars=document.querySelectorAll('#star-container .star');stars.forEach(star=>star.addEventListener('click',()=>{
+  const stars=document.querySelectorAll('#star-container .star');stars.forEach(star=>star.addEventListener('click',async()=>{
     const rating=parseInt(star.getAttribute('data-rating'),10);if(!rating||!currentBusiness)return;selectedRating=rating;
     stars.forEach(s=>s.classList.toggle('selected',parseInt(s.getAttribute('data-rating'),10)<=rating));
-    if(rating>=4){setText('biz-subtitle','Redirecting to Google Reviews...');redirectToGoogle();}else document.getElementById('feedback-form-container')?.classList.remove('hidden');
+    if(rating>=4){
+      setText('biz-subtitle','Redirecting to Google Reviews...');
+      try {
+        const { error } = await supabase.from('rating_events').insert([{business_id:currentBusiness.id,rating}]);
+        if(error) console.error('Positive rating tracking failed:',error);
+      } catch(error) { console.error('Positive rating tracking failed:',error); }
+      redirectToGoogle();
+    } else document.getElementById('feedback-form-container')?.classList.remove('hidden');
   }));
 }
 
