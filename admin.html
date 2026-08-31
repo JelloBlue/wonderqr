@@ -4,19 +4,32 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Owner Feedback Dashboard - WonderQR</title>
-
-  <!-- Favicon & Basic Manifest -->
-  <link rel="icon" type="image/png" href="favicon.png">
-  <link rel="apple-touch-icon" href="favicon.png">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#0d4734">
-
   <link rel="stylesheet" href="css/style.css">
+  
+  <!-- CDN for QR Code Generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
   <div class="container">
-    <h1 id="dashboard-title">Private Feedback</h1>
+    <h1 id="business-title">Private Feedback</h1>
     <p class="subtitle" id="dashboard-subtitle">Loading your reviews...</p>
+
+    <!-- Review Board Generator Section -->
+    <div id="qr-standee-section" style="margin: 20px 0; padding: 20px; border: 1px solid #ddd; border-radius: 8px; text-align: center;">
+      <h2>Download Review Standee (4x6 in)</h2>
+      <p>Download your print-ready review board for your store counter.</p>
+      
+      <!-- Hidden div used to generate the QR code -->
+      <div id="qrcode-hidden" style="display:none;"></div>
+
+      <!-- Preview Canvas -->
+      <canvas id="standee-canvas" style="max-width: 100%; height: auto; border: 1px solid #ccc; border-radius: 8px;"></canvas>
+      
+      <br><br>
+      <button id="download-standee-btn" style="padding: 10px 20px; background-color: #0d4734; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold;">
+        Download 4x6 Printable Standee
+      </button>
+    </div>
 
     <!-- Content List -->
     <div id="feedback-list"></div>
