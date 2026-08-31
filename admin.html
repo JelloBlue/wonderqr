@@ -30,6 +30,7 @@ async function loadDashboard() {
   if (bizError || !business) {
     console.error("Auth lookup failed:", bizError);
     if (subtitleEl) subtitleEl.innerText = "Unauthorized: Invalid business token.";
+    localStorage.removeItem('admin_auth_token');
     return;
   }
 
@@ -88,7 +89,7 @@ function generateStandee(identifier) {
         const qrOverlay = new Image();
         qrOverlay.src = qrImg.src;
         qrOverlay.onload = () => {
-          const qrSize = canvas.width * 0.35; 
+          const qrSize = canvas.width * 0.35;
           const qrX = (canvas.width - qrSize) / 2;
           const qrY = canvas.height * 0.465;
 
