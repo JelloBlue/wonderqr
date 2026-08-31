@@ -1,7 +1,7 @@
 {
-  "name": "WonderQR Owner Dashboard",
-  "short_name": "WonderQR",
-  "start_url": "/owner.html",
+  "name": "WonderQR Admin Dashboard",
+  "short_name": "WonderQR Admin",
+  "start_url": "./admin.html",
   "display": "standalone",
   "background_color": "#0d4734",
   "theme_color": "#0d4734",
