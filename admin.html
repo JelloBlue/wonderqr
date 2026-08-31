@@ -82,7 +82,7 @@
 <body>
   <div class="container">
 
-    <!-- Sticky Top PWA Banner (Appears only when app isn't installed) -->
+    <!-- Sticky Top PWA Banner -->
     <div id="pwa-top-bar" class="top-install-bar hidden">
       <p class="install-text">📲 Install app for quick home screen access</p>
       <button id="pwa-install-btn" class="install-pwa-btn">
@@ -108,10 +108,24 @@
 
   <script type="module" src="js/admin.js"></script>
 
-  <!-- Dynamic PWA Manifest and Install Logic -->
+  <!-- Service Worker Registration & Dynamic PWA Logic -->
   <script>
+    // 1. Register Service Worker to meet PWA criteria
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js')
+        .then(() => console.log('PWA Service Worker registered.'))
+        .catch(err => console.error('SW Registration Failed:', err));
+    }
+
+    // 2. Token persistence & Dynamic Manifest construction
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token') || localStorage.getItem('admin_auth_token');
+    let token = urlParams.get('token');
+
+    if (token) {
+      localStorage.setItem('admin_auth_token', token);
+    } else {
+      token = localStorage.getItem('admin_auth_token');
+    }
 
     if (token) {
       const dynamicManifest = {
@@ -128,7 +142,7 @@
       };
 
       const stringManifest = JSON.stringify(dynamicManifest);
-      const blob = new Blob([stringManifest], {type: 'application/json'});
+      const blob = new Blob([stringManifest], { type: 'application/json' });
       const manifestURL = URL.createObjectURL(blob);
       const manifestLink = document.getElementById('manifest-link');
       if (manifestLink) {
@@ -136,6 +150,7 @@
       }
     }
 
+    // 3. UI Install Bar Display Logic
     let deferredPrompt;
     const topBar = document.getElementById('pwa-top-bar');
     const installBtn = document.getElementById('pwa-install-btn');
@@ -150,38 +165,40 @@
       return (window.matchMedia('(display-mode: standalone)').matches) || (window.navigator.standalone === true);
     };
 
+    // Show top install bar on standard browsers (Hide only if launched inside PWA standalone mode)
+    if (!isStandalone()) {
+      if (isIos()) {
+        iosPrompt.classList.remove('hidden');
+      } else {
+        topBar.classList.remove('hidden');
+      }
+    }
+
+    // Capture native Chrome install prompt event
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      if (!isStandalone()) {
-        topBar.classList.remove('hidden');
-      }
     });
 
     installBtn.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      if (outcome === 'accepted') {
-        console.log('App successfully added to home screen.');
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          console.log('App added to home screen.');
+        }
+        deferredPrompt = null;
+        topBar.classList.add('hidden');
+      } else {
+        // Fallback for browsers where beforeinstallprompt didn't trigger
+        alert('To install: Tap your browser menu (⋮ or ⋯) and select "Add to Home screen" or "Install app".');
       }
-      deferredPrompt = null;
-      topBar.classList.add('hidden');
     });
-
-    if (isIos() && !isStandalone()) {
-      iosPrompt.classList.remove('hidden');
-    }
 
     window.addEventListener('appinstalled', () => {
       topBar.classList.add('hidden');
       iosPrompt.classList.add('hidden');
     });
   </script>
-  if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .then(() => console.log('Service Worker Registered'))
-    .catch((err) => console.log('SW registration failed:', err));
-}
 </body>
 </html>
