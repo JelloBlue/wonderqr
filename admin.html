@@ -1,24 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WonderQR Admin</title>
-<style>
-*{box-sizing:border-box}body{margin:0;min-height:100vh;font-family:Arial,sans-serif;background:linear-gradient(135deg,#0d4734,#166534,#052e16);color:#1f2937}.page{max-width:1100px;margin:auto;padding:24px 16px 50px}.header,.card{background:#fff;border-radius:18px;box-shadow:0 15px 35px rgba(0,0,0,.18)}.header{padding:22px 24px;margin-bottom:20px}.brand{font-size:1.45rem;font-weight:800;color:#0d4734}.business-title{margin-top:4px;font-weight:600}.subtitle{margin-top:3px;font-size:.85rem;color:#6b7280}.grid{display:grid;grid-template-columns:1fr 1fr;gap:20px}.card{padding:24px}.card h2{margin:0 0 18px;color:#0d4734;font-size:1.15rem}.standee-wrapper{display:flex;justify-content:center;background:#f3f4f6;border-radius:14px;padding:15px;overflow:hidden}#standee-canvas{display:block;width:100%;max-width:420px;height:auto;border-radius:8px;box-shadow:0 8px 20px rgba(0,0,0,.15)}.download-btn{width:100%;border:0;border-radius:10px;margin-top:16px;padding:14px 18px;background:#0d4734;color:#fff;font-size:1rem;font-weight:700;cursor:pointer}.download-btn:hover{background:#15803d}.download-btn:disabled{background:#9ca3af;cursor:not-allowed}#feedback-list{max-height:600px;overflow-y:auto}.feedback-card{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:15px;margin-bottom:12px}.feedback-stars{color:#f59e0b;font-size:1.25rem;letter-spacing:1px}.feedback-date{font-size:.78rem;color:#6b7280;margin:5px 0 9px}.feedback-msg{font-size:.92rem;line-height:1.5;white-space:pre-wrap;word-break:break-word}.empty-message{text-align:center;padding:35px 15px;color:#6b7280}.status{padding:12px 14px;border-radius:10px;margin-bottom:18px;font-size:.88rem}.status.loading{background:#eff6ff;color:#1d4ed8}.status.error{background:#fef2f2;color:#b91c1c}.status.success{background:#ecfdf5;color:#047857}@media(max-width:760px){.page{padding:14px 10px 35px}.grid{grid-template-columns:1fr}.card{padding:18px}}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WonderQR Admin</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; font-family: Arial, sans-serif; background: linear-gradient(135deg, #0d4734, #166534, #052e16); color: #1f2937; }
+    .page { max-width: 1100px; margin: auto; padding: 24px 16px 50px; }
+    .header, .card { background: #fff; border-radius: 18px; box-shadow: 0 15px 35px rgba(0,0,0,.18); }
+    .header { padding: 22px 24px; margin-bottom: 20px; }
+    .brand { font-size: 1.45rem; font-weight: 800; color: #0d4734; }
+    .business-title { margin-top: 4px; font-weight: 600; }
+    .subtitle { margin-top: 3px; font-size: .85rem; color: #6b7280; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .card { padding: 24px; }
+    .card h2 { margin: 0 0 18px; color: #0d4734; font-size: 1.15rem; }
+    .standee-wrapper { display: flex; justify-content: center; background: #f3f4f6; border-radius: 14px; padding: 15px; overflow: hidden; }
+    #standee-canvas { display: block; width: 100%; max-width: 420px; height: auto; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,.15); }
+    .download-btn { width: 100%; border: 0; border-radius: 10px; margin-top: 16px; padding: 14px 18px; background: #0d4734; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; }
+    .download-btn:hover { background: #15803d; }
+    .download-btn:disabled { background: #9ca3af; cursor: not-allowed; }
+    #feedback-list { max-height: 600px; overflow-y: auto; }
+    .feedback-card { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 15px; margin-bottom: 12px; }
+    .feedback-stars { color: #f59e0b; font-size: 1.25rem; letter-spacing: 1px; }
+    .feedback-date { font-size: .78rem; color: #6b7280; margin: 5px 0 9px; }
+    .feedback-msg { font-size: .92rem; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
+    .empty-message { text-align: center; padding: 35px 15px; color: #6b7280; }
+    .status { padding: 12px 14px; border-radius: 10px; margin-bottom: 18px; font-size: .88rem; }
+    .status.loading { background: #eff6ff; color: #1d4ed8; }
+    .status.error { background: #fef2f2; color: #b91c1c; }
+    .status.success { background: #ecfdf5; color: #047857; }
+    @media (max-width: 760px) { .page { padding: 14px 10px 35px; } .grid { grid-template-columns: 1fr; } .card { padding: 18px; } }
+  </style>
 </head>
 <body>
-<main class="page">
-<header class="header"><div><div class="brand">WonderQR Admin</div><div id="business-title" class="business-title">Loading Business...</div><div id="dashboard-subtitle" class="subtitle">Loading dashboard...</div></div></header>
-<div id="status-message" class="status loading">Loading...</div>
-<section class="grid">
-<div class="card"><h2>Review Board</h2><div class="standee-wrapper"><canvas id="standee-canvas"></canvas></div><button id="download-standee-btn" class="download-btn" disabled>Download Review Board</button></div>
-<div class="card"><h2>Customer Feedback</h2><div id="feedback-list"><div class="empty-message">Loading feedback...</div></div></div>
-</section>
-<div id="qrcode-hidden" style="position:absolute;left:-99999px;top:-99999px;width:600px;height:600px;overflow:hidden"></div>
-</main>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script type="module" src="js/admin.js"></script>
+  <main class="page">
+    <header class="header">
+      <div class="brand">WonderQR Admin</div>
+      <div id="business-title" class="business-title">Loading Business...</div>
+      <div id="dashboard-subtitle" class="subtitle">Loading dashboard...</div>
+    </header>
+
+    <div id="status-message" class="status loading">Loading...</div>
+
+    <section class="grid">
+      <div class="card">
+        <h2>Review Board</h2>
+        <div class="standee-wrapper">
+          <canvas id="standee-canvas"></canvas>
+        </div>
+        <button id="download-standee-btn" class="download-btn" disabled>Download Review Board</button>
+      </div>
+
+      <div class="card">
+        <h2>Customer Feedback</h2>
+        <div id="feedback-list">
+          <div class="empty-message">Loading feedback...</div>
+        </div>
+      </div>
+    </section>
+
+    <div id="qrcode-hidden" style="position:absolute;left:-99999px;top:-99999px;width:600px;height:600px;overflow:hidden"></div>
+  </main>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <script type="module" src="js/admin.js"></script>
 </body>
 </html>
