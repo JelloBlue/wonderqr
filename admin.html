@@ -19,7 +19,6 @@
     .standee-wrapper { display: flex; justify-content: center; background: #f3f4f6; border-radius: 14px; padding: 15px; overflow: hidden; }
     #standee-canvas { display: block; width: 100%; max-width: 420px; height: auto; border-radius: 8px; box-shadow: 0 8px 20px rgba(0,0,0,.15); }
     .download-btn { width: 100%; border: 0; border-radius: 10px; margin-top: 16px; padding: 14px 18px; background: #0d4734; color: #fff; font-size: 1rem; font-weight: 700; cursor: pointer; }
-    .download-btn:hover { background: #15803d; }
     .download-btn:disabled { background: #9ca3af; cursor: not-allowed; }
     #feedback-list { max-height: 600px; overflow-y: auto; }
     .feedback-card { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 15px; margin-bottom: 12px; }
@@ -41,30 +40,21 @@
       <div id="business-title" class="business-title">Loading Business...</div>
       <div id="dashboard-subtitle" class="subtitle">Loading dashboard...</div>
     </header>
-
     <div id="status-message" class="status loading">Loading...</div>
-
     <section class="grid">
       <div class="card">
         <h2>Review Board</h2>
-        <div class="standee-wrapper">
-          <canvas id="standee-canvas"></canvas>
-        </div>
+        <div class="standee-wrapper"><canvas id="standee-canvas"></canvas></div>
         <button id="download-standee-btn" class="download-btn" disabled>Download Review Board</button>
       </div>
-
       <div class="card">
         <h2>Customer Feedback</h2>
-        <div id="feedback-list">
-          <div class="empty-message">Loading feedback...</div>
-        </div>
+        <div id="feedback-list"><div class="empty-message">Loading feedback...</div></div>
       </div>
     </section>
-
     <div id="qrcode-hidden" style="position:absolute;left:-99999px;top:-99999px;width:600px;height:600px;overflow:hidden"></div>
   </main>
-
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script type="module" src="js/admin.js"></script>
+  <script type="module" src="js/admin.js?v=2"></script>
 </body>
 </html>
