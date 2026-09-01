@@ -17,6 +17,38 @@ function formatDate(value) {
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
 }
 
+// Opens and populates the Edit Business modal used by superadmin.js.
+// The Edit button was already being rendered and its click handler was already
+// calling openEditModal(), but that function was missing from the loaded scripts.
+window.openEditModal = function(id) {
+  const b = window.loadedBusinesses?.find(x => String(x.id) === String(id));
+  const modal = document.getElementById('edit-modal');
+  if (!b || !modal) {
+    alert('Unable to open Edit Business: business record not found.');
+    return;
+  }
+
+  const setValue = (fieldId, value) => {
+    const el = document.getElementById(fieldId);
+    if (el) el.value = value ?? '';
+  };
+
+  // Keep the ID both in the hidden field and on the modal. The submit handler
+  // already supports both locations.
+  setValue('edit-biz-id', b.id);
+  modal.dataset.businessId = String(b.id);
+  setValue('edit-biz-name', b.business_name);
+  setValue('edit-owner-name', b.owner_name);
+  setValue('edit-google-url', b.google_review_url);
+  setValue('edit-whatsapp', b.whatsapp_number);
+  setValue('edit-phone', b.phone_number);
+  setValue('edit-instagram-url', b.instagram_url);
+  setValue('edit-youtube-url', b.youtube_url);
+
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex';
+};
+
 function enhanceBusinesses() {
   const tbody = document.getElementById('businesses-tbody');
   if (!tbody || !window.loadedBusinesses?.length) return;
