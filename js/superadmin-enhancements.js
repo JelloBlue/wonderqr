@@ -36,7 +36,8 @@ function ensurePinControls() {
     const btn = document.getElementById('change-pin-btn');
     btn.disabled = true;
     try {
-      await apiCall('reset_pin', { business_id: String(id), new_pin: pin });
+      // superadmin_api expects the PIN in the `pin` property.
+      await apiCall('reset_pin', { business_id: String(id), pin });
       document.getElementById('edit-biz-pin').value = '';
       alert('Admin PIN changed successfully.');
     } catch (e) {
@@ -47,7 +48,6 @@ function ensurePinControls() {
   });
 }
 
-// Opens and populates the Edit Business modal used by superadmin.js.
 window.openEditModal = function(id) {
   const b = window.loadedBusinesses?.find(x => String(x.id) === String(id));
   const modal = document.getElementById('edit-modal');
