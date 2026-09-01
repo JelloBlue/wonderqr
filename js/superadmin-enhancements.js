@@ -24,21 +24,25 @@ function ensurePinControls() {
   const row = document.createElement('div');
   row.id = 'edit-pin-section';
   row.style.cssText = 'margin-top:14px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px';
-  row.innerHTML = '<label class="form-label" style="font-weight:600">Admin PIN</label><input type="password" id="edit-biz-pin" class="form-input" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" placeholder="Enter new 4-digit PIN"><div style="font-size:.72rem;color:#64748b;margin-top:4px">Leave blank to keep the current PIN.</div><button type="button" id="change-pin-btn" class="action-btn" style="margin-top:8px;background:#7c3aed;color:#fff">Change PIN</button>';
+  row.innerHTML = '<label class="form-label" style="font-weight:600">Admin PIN</label><input type="tel" id="edit-biz-pin" class="form-input" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="Enter new 4-digit PIN"><div style="font-size:.72rem;color:#64748b;margin-top:4px">Leave blank to keep the current PIN.</div><button type="button" id="change-pin-btn" class="action-btn" style="margin-top:8px;background:#7c3aed;color:#fff">Change PIN</button>';
   const buttons = form.querySelector('div:last-child');
   form.insertBefore(row, buttons || null);
+  const pinInput = document.getElementById('edit-biz-pin');
+  pinInput.addEventListener('input', () => {
+    pinInput.value = pinInput.value.replace(/\D/g, '').slice(0, 4);
+  });
   document.getElementById('change-pin-btn').addEventListener('click', async () => {
     const id = document.getElementById('edit-biz-id')?.value || modal.dataset.businessId;
-    const pin = document.getElementById('edit-biz-pin')?.value.trim();
+    const pin = pinInput.value.replace(/\D/g, '').slice(0, 4);
+    pinInput.value = pin;
     if (!id) return alert('Business record not found.');
-    if (!/^\d{4}$/.test(pin)) return alert('Please enter exactly 4 digits for the new PIN.');
+    if (pin.length !== 4) return alert('Please enter exactly 4 digits for the new PIN.');
     if (!confirm('Change the Admin PIN for this business?')) return;
     const btn = document.getElementById('change-pin-btn');
     btn.disabled = true;
     try {
-      // superadmin_api expects the PIN in the `pin` property.
-      await apiCall('reset_pin', { business_id: String(id), pin });
-      document.getElementById('edit-biz-pin').value = '';
+      await apiCall('reset_pin', { business_id: String(id), pin: pin });
+      pinInput.value = '';
       alert('Admin PIN changed successfully.');
     } catch (e) {
       alert('Failed to change PIN: ' + e.message);
