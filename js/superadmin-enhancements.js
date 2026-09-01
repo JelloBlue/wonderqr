@@ -17,9 +17,37 @@ function formatDate(value) {
   return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
 }
 
+function ensurePinControls() {
+  const modal = document.getElementById('edit-modal');
+  const form = document.getElementById('edit-biz-form');
+  if (!modal || !form || document.getElementById('edit-biz-pin')) return;
+  const row = document.createElement('div');
+  row.id = 'edit-pin-section';
+  row.style.cssText = 'margin-top:14px;padding:12px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px';
+  row.innerHTML = '<label class="form-label" style="font-weight:600">Admin PIN</label><input type="password" id="edit-biz-pin" class="form-input" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" placeholder="Enter new 4-digit PIN"><div style="font-size:.72rem;color:#64748b;margin-top:4px">Leave blank to keep the current PIN.</div><button type="button" id="change-pin-btn" class="action-btn" style="margin-top:8px;background:#7c3aed;color:#fff">Change PIN</button>';
+  const buttons = form.querySelector('div:last-child');
+  form.insertBefore(row, buttons || null);
+  document.getElementById('change-pin-btn').addEventListener('click', async () => {
+    const id = document.getElementById('edit-biz-id')?.value || modal.dataset.businessId;
+    const pin = document.getElementById('edit-biz-pin')?.value.trim();
+    if (!id) return alert('Business record not found.');
+    if (!/^\d{4}$/.test(pin)) return alert('Please enter exactly 4 digits for the new PIN.');
+    if (!confirm('Change the Admin PIN for this business?')) return;
+    const btn = document.getElementById('change-pin-btn');
+    btn.disabled = true;
+    try {
+      await apiCall('reset_pin', { business_id: String(id), new_pin: pin });
+      document.getElementById('edit-biz-pin').value = '';
+      alert('Admin PIN changed successfully.');
+    } catch (e) {
+      alert('Failed to change PIN: ' + e.message);
+    } finally {
+      btn.disabled = false;
+    }
+  });
+}
+
 // Opens and populates the Edit Business modal used by superadmin.js.
-// The Edit button was already being rendered and its click handler was already
-// calling openEditModal(), but that function was missing from the loaded scripts.
 window.openEditModal = function(id) {
   const b = window.loadedBusinesses?.find(x => String(x.id) === String(id));
   const modal = document.getElementById('edit-modal');
@@ -27,14 +55,10 @@ window.openEditModal = function(id) {
     alert('Unable to open Edit Business: business record not found.');
     return;
   }
-
   const setValue = (fieldId, value) => {
     const el = document.getElementById(fieldId);
     if (el) el.value = value ?? '';
   };
-
-  // Keep the ID both in the hidden field and on the modal. The submit handler
-  // already supports both locations.
   setValue('edit-biz-id', b.id);
   modal.dataset.businessId = String(b.id);
   setValue('edit-biz-name', b.business_name);
@@ -44,7 +68,9 @@ window.openEditModal = function(id) {
   setValue('edit-phone', b.phone_number);
   setValue('edit-instagram-url', b.instagram_url);
   setValue('edit-youtube-url', b.youtube_url);
-
+  ensurePinControls();
+  const pin = document.getElementById('edit-biz-pin');
+  if (pin) pin.value = '';
   modal.classList.remove('hidden');
   modal.style.display = 'flex';
 };
