@@ -1,4 +1,4 @@
-import { SUPABASE_URL, SUPABASE_ANON_KEY, supabase } from './config.js?v=5';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, supabase } from './config.js?v=6';
 
 const urlParams = new URLSearchParams(window.location.search);
 const qrCode = (urlParams.get('qr') || '').trim();
@@ -8,14 +8,14 @@ let selectedRating = 0;
 async function init() {
   if (!qrCode) { setText('biz-name','Invalid Link'); setText('biz-subtitle','No QR code specified in URL.'); return; }
   try {
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/rpc/get_public_business_by_qr`, {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/public_qr_lookup`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY, 'Authorization': `Bearer ${SUPABASE_ANON_KEY}` },
-      body: JSON.stringify({ p_qr_code: qrCode })
+      headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_ANON_KEY },
+      body: JSON.stringify({ qr_code: qrCode })
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data?.message || data?.hint || data?.details || `Supabase request failed (${response.status})`);
-    const business = Array.isArray(data) ? data[0] : data;
+    if (!response.ok) throw new Error(data?.error || `QR lookup failed (${response.status})`);
+    const business = data?.business;
     if (!business) { setText('biz-name','WonderQR'); setText('biz-subtitle','This QR code is not activated yet. Please check back after activation.'); return; }
     if (business.active !== true) { setText('biz-name','WonderQR'); setText('biz-subtitle','This QR code is not currently active.'); return; }
     currentBusiness = business;
