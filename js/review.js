@@ -1,4 +1,4 @@
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js?v=4';
+import { SUPABASE_URL, SUPABASE_ANON_KEY, supabase } from './config.js?v=5';
 
 const urlParams = new URLSearchParams(window.location.search);
 const qrCode = (urlParams.get('qr') || '').trim();
