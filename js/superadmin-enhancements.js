@@ -1,6 +1,6 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import './superadmin-links.js';
-import './superadmin-link-buttons.js';
+import './superadmin-link-buttons.js?v=2';
 
 const key = new URLSearchParams(location.search).get('key') || '';
 const api = `${SUPABASE_URL}/functions/v1/superadmin_api`;
