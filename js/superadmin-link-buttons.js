@@ -1,26 +1,49 @@
-// Converts generated copy-link actions on the Super Admin page into direct-open buttons.
-function enhanceDirectLinkButtons(){
-  document.querySelectorAll('[data-copy]').forEach(btn=>{
-    if(btn.dataset.directOpen==='1') return;
-    const text=(btn.textContent||'').trim().toLowerCase();
-    const isCustomer=text.includes('customer');
-    const isAdmin=text.includes('admin');
-    const isSales=text.includes('sales')||text==='copy link';
-    if(!isCustomer&&!isAdmin&&!isSales)return;
-    const url=btn.getAttribute('data-copy');
-    if(!url)return;
+// Super Admin: convert generated copy-link actions into real link-opening buttons.
+// Uses capture-phase delegation so any older copy-link handler cannot intercept the click.
+(() => {
+  const getType = btn => {
+    const text = (btn.textContent || '').trim().toLowerCase();
+    if (text.includes('customer')) return 'customer';
+    if (text.includes('admin')) return 'admin';
+    if (text.includes('sales') || text === 'copy link') return 'sales';
+    return null;
+  };
+
+  function prepare(btn) {
+    if (!btn || btn.dataset.directOpen === '1') return;
+    const type = getType(btn);
+    const url = btn.getAttribute('data-copy');
+    if (!type || !url) return;
+
     btn.removeAttribute('data-copy');
-    btn.dataset.directOpen='1';
-    btn.dataset.openUrl=url;
+    btn.dataset.directOpen = '1';
+    btn.dataset.openUrl = url;
     btn.classList.remove('btn-copy');
-    if(isCustomer)btn.textContent='Customer Rating Link';
-    else if(isAdmin)btn.textContent='Admin Link';
-    else btn.textContent='Sales Link';
-    btn.addEventListener('click',()=>window.open(url,'_blank','noopener,noreferrer'));
-  });
-}
-const directLinkObserver=new MutationObserver(enhanceDirectLinkButtons);
-directLinkObserver.observe(document.body,{childList:true,subtree:true});
-setTimeout(enhanceDirectLinkButtons,100);
-setTimeout(enhanceDirectLinkButtons,500);
-setTimeout(enhanceDirectLinkButtons,1500);
+    btn.textContent = type === 'customer' ? 'Customer Rating Link' : type === 'admin' ? 'Admin Link' : 'Sales Link';
+    btn.title = 'Open link in a new tab';
+  }
+
+  function prepareAll() {
+    document.querySelectorAll('[data-copy]').forEach(prepare);
+  }
+
+  // Capture phase runs before the old document-level copy handler.
+  document.addEventListener('click', event => {
+    const btn = event.target.closest('[data-direct-open], [data-copy]');
+    if (!btn) return;
+    const type = getType(btn);
+    const url = btn.dataset.openUrl || btn.getAttribute('data-copy');
+    if (!type || !url) return;
+
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }, true);
+
+  const observer = new MutationObserver(prepareAll);
+  observer.observe(document.body, { childList: true, subtree: true });
+  prepareAll();
+  setTimeout(prepareAll, 100);
+  setTimeout(prepareAll, 500);
+  setTimeout(prepareAll, 1500);
+})();
