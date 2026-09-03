@@ -28,4 +28,37 @@ function enhanceBusinesses(){const tbody=document.getElementById('businesses-tbo
 async function toggleBusiness(id){const b=window.loadedBusinesses?.find(x=>String(x.id)===String(id));if(!b)return;const next=b.active===false;if(!confirm(`${next?'Activate':'Deactivate'} ${b.business_name||'this business'}?`))return;try{await apiCall('update_business',{id:String(id),updates:{active:next}});alert(next?'Business activated.':'Business deactivated.');window.location.reload();}catch(e){alert('Failed to change business status: '+e.message);}}
 async function clearTestFeedback(id){const b=window.loadedBusinesses?.find(x=>String(x.id)===String(id));if(!b)return;if(!confirm(`Clear TEST feedback for ${b.business_name||'this business'}?\n\nThis will remove the test feedback records for this business. This cannot be undone.`))return;try{const d=await apiCall('clear_test_feedback',{business_id:String(id)});alert(`${d.deleted||0} test feedback record(s) cleared.`);window.location.reload();}catch(e){alert('Failed to clear test feedback: '+e.message);}}
 document.addEventListener('click',e=>{const toggle=e.target.closest('[data-biz-toggle]');if(toggle){toggleBusiness(toggle.dataset.bizToggle);return;}const clear=e.target.closest('[data-clear-test]');if(clear){clearTestFeedback(clear.dataset.clearTest);return;}});
-const observer=new MutationObserver(enhanceBusinesses);observer.observe(document.body,{childList:true,subtree:true});setTimeout(enhanceBusinesses,500);setTimeout(enhanceBusinesses,1500);
+
+// Keep the Super Admin Add Business form consistent with the Sales Rep onboarding form.
+function enhanceAddBusinessForm() {
+  const form = document.getElementById('add-biz-form');
+  if (!form || form.dataset.placeholdersEnhanced === '1') return;
+  const fields = {
+    'add-qr-code': ['text', 'e.g. RS00001'],
+    'add-biz-name': ['text', 'e.g. Varsha Grand'],
+    'add-google-url': ['text', 'e.g. ChIJxxxxxxxxxxxxxxxx'],
+    'add-owner-name': ['text', 'e.g. Ravi'],
+    'add-whatsapp': ['tel', 'e.g. 919876543210'],
+    'add-phone': ['tel', 'e.g. +919876543210'],
+    'add-instagram-url': ['url', 'https://instagram.com/...'],
+    'add-youtube-url': ['url', 'https://youtube.com/...']
+  };
+  Object.entries(fields).forEach(([id, [type, placeholder]]) => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.type = type;
+    input.placeholder = placeholder;
+  });
+  const googleLabel = form.querySelector('label[for="add-google-url"]');
+  if (googleLabel) googleLabel.textContent = 'Google Place ID *';
+  const google = document.getElementById('add-google-url');
+  if (google && /^https?:\/\/search\.google\.com\/local\/writereview\?placeid=$/i.test(google.value.trim())) google.value = '';
+  form.dataset.placeholdersEnhanced = '1';
+}
+
+document.addEventListener('DOMContentLoaded', enhanceAddBusinessForm);
+document.addEventListener('click', e => {
+  if (e.target.closest('#open-add-modal-btn')) setTimeout(enhanceAddBusinessForm, 0);
+});
+const observer=new MutationObserver(enhanceBusinesses);observer.observe(document.body,{childList:true,subtree:true});
+setTimeout(enhanceBusinesses,500);setTimeout(enhanceBusinesses,1500);setTimeout(enhanceAddBusinessForm,100);
