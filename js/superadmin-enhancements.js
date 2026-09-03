@@ -1,9 +1,10 @@
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config.js';
 import './superadmin-links.js';
+import './superadmin-link-buttons.js';
 
 const key = new URLSearchParams(location.search).get('key') || '';
 const api = `${SUPABASE_URL}/functions/v1/superadmin_api`;
-const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const esc = v => String(v ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#39;'}[c]));
 
 async function apiCall(action, extra = {}) {
   const r = await fetch(api, { method:'POST', headers:{'Content-Type':'application/json','apikey':SUPABASE_ANON_KEY,'x-superadmin-key':key}, body:JSON.stringify({action,...extra}) });
