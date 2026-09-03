@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const MASTER_KEY = Deno.env.get("SUPERADMIN_KEY");
 const db = () => createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-const cors = {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"content-type, apikey, x-superadmin-key","Access-Control-Allow-Methods":"POST, OPTIONS"};
+const cors = {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"content-type, apikey, x-superadmin-key, x-admin-token","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const out = (data: unknown, status = 200) => new Response(JSON.stringify(data), {status, headers:{...cors,"Content-Type":"application/json"}});
 const EVENT_TYPES = new Set(["scan","rating_1","rating_2","rating_3","instagram_click","youtube_click","facebook_click","pinterest_click","x_click","whatsapp_click","phone_click","justdial_click"]);
 
@@ -30,11 +30,25 @@ Deno.serve(async (req) => {
       return out({ok:true});
     }
     if (action === "summary") {
-      const suppliedKey=req.headers.get("x-superadmin-key")||body.key;
-      if(!MASTER_KEY||suppliedKey!==MASTER_KEY)return out({error:"Unauthorized"},401);
-      const businessId=Number(body.business_id);const start=String(body.start||"").trim();const end=String(body.end||"").trim();
+      const businessId=Number(body.business_id);
+      const start=String(body.start||"").trim();
+      const end=String(body.end||"").trim();
       if(!Number.isInteger(businessId)||businessId<1)return out({error:"Invalid business ID"},400);
       if(!start||!end)return out({error:"Start and end dates are required"},400);
+
+      const suppliedKey=req.headers.get("x-superadmin-key")||body.key;
+      let authorized=false;
+      if(MASTER_KEY && suppliedKey===MASTER_KEY) authorized=true;
+
+      if(!authorized){
+        const adminToken=(req.headers.get("x-admin-token")||body.admin_token||"").trim();
+        if(!adminToken)return out({error:"Unauthorized"},401);
+        const {data:business,error:authError}=await supabase.from("businesses").select("id").eq("id",businessId).eq("auth_token",adminToken).eq("active",true).maybeSingle();
+        if(authError)return out({error:authError.message},400);
+        if(!business)return out({error:"Unauthorized"},401);
+        authorized=true;
+      }
+
       const {data,error}=await supabase.from("usage_events").select("event_type,visitor_id,created_at").eq("business_id",businessId).gte("created_at",start).lt("created_at",end).order("created_at",{ascending:false});
       if(error)return out({error:error.message},400);
       const counts:Record<string,number>={};const visitors=new Set<string>();let lastScan:string|null=null;
