@@ -27,8 +27,6 @@ create table businesses (
     whatsapp_number text,
     phone_number text,
     justdial_url text,
-    zomato_url text,
-    swiggy_url text,
     pinterest_url text,
     x_url text,
     owner_name text,
