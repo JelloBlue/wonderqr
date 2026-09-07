@@ -1,0 +1,3 @@
+-- Rollback for notification inbox UI refinement
+-- Restore js/admin-notifications-ui.js from commit 03c2b8fcc0b0cf38068ef8b6f11f8ff89cb33df8 if needed.
+-- No database or Edge Function changes are made by this UI-only refinement.
