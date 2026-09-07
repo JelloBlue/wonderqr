@@ -1,0 +1,3 @@
+-- Rollback for notification subscription persistence UI fix
+-- Restore js/admin-notifications-ui.js from commit c011e2449a82aa359bc197b1e73311732d1905c6 if needed.
+-- No database schema changes are made by this fix.
