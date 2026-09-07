@@ -22,5 +22,7 @@ const ready=async()=>{
   enable.onclick=async()=>{enable.disabled=true;try{const m=await import('./notifications.js');await m.enableAdminNotifications(token);setNotificationUi(true)}catch(e){setNotificationUi(false,e instanceof Error?e.message:String(e))}finally{enable.disabled=false}};
   disable.onclick=async()=>{disable.disabled=true;try{const m=await import('./notifications.js');await m.disableAdminNotifications(token);setNotificationUi(false)}catch(e){status.textContent=e instanceof Error?e.message:String(e)}finally{disable.disabled=false}};
   loadNotifications();syncNotificationUi();window.addEventListener('wonderqr:admin-ready',()=>{loadNotifications();syncNotificationUi()});
+  if('serviceWorker' in navigator){navigator.serviceWorker.addEventListener('message',event=>{if(event.data?.type==='wonderqr:notification-received')loadNotifications()})}
+  window.addEventListener('focus',loadNotifications);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')loadNotifications()});
 };
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',ready);else ready();
