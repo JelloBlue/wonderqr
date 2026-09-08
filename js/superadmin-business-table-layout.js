@@ -32,13 +32,14 @@ function ensureBusinessTableStyles(){
   const style=document.createElement('style');
   style.id='business-table-layout-styles';
   style.textContent=`
-    #businesses-tbody.business-table-normalized{}
-    #businesses-tbody td:nth-child(4){font-size:.78rem;line-height:1.45}
+    #businesses-tbody th:nth-child(3),#businesses-tbody td:nth-child(3),
+    #businesses-tbody th:nth-child(4),#businesses-tbody td:nth-child(4){display:table-cell!important}
     #businesses-tbody th:nth-child(1){width:24%}
     #businesses-tbody th:nth-child(2){width:10%}
     #businesses-tbody th:nth-child(3){width:18%}
     #businesses-tbody th:nth-child(4){width:22%}
     #businesses-tbody th:nth-child(5){width:26%}
+    #businesses-tbody td:nth-child(4){font-size:.78rem;line-height:1.45}
   `;
   document.head.appendChild(style);
 }
