@@ -1,0 +1,3 @@
+-- Rollback note for Super Admin duplicate Deactivate button UI fix.
+-- No database changes are made by this UI fix.
+-- Restore superadmin.html from the commit immediately before the fix if needed.
