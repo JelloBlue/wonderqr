@@ -30,7 +30,7 @@ window.openEditModal=function(id){const b=window.loadedBusinesses?.find(x=>Strin
 // The core Super Admin renderer in superadmin.js already creates the business
 // Activate/Deactivate and Clear Test Feedback controls. This enhancement only
 // adds the activation metadata and must not append duplicate action buttons.
-function enhanceBusinesses(){const tbody=document.getElementById('businesses-tbody');if(!tbody||!window.loadedBusinesses?.length)return;tbody.querySelectorAll('tr').forEach(row=>{const edit=row.querySelector('[data-edit]');if(!edit||row.dataset.enhanced==='1')return;const b=window.loadedBusinesses.find(x=>String(x.id)===String(edit.dataset.edit));if(!b)return;row.dataset.enhanced='1';const status=b.active!==false,cells=row.querySelectorAll('td');if(cells[4])cells[4].insertAdjacentHTML('beforeend',`<div style="margin-top:4px;font-size:.75rem"><strong>${status?'Active':'Inactive'}</strong><br>Activated: ${esc(formatDate(b.activation_date))}</div>`);});}
+function enhanceBusinesses(){const tbody=document.getElementById('businesses-tbody');if(!tbody||!window.loadedBusinesses?.length)return;tbody.querySelectorAll('tr').forEach(row=>{const edit=row.querySelector('[data-edit]');if(!edit||row.dataset.enhanced==='1')return;const b=window.loadedBusinesses.find(x=>String(x.id)===String(edit.dataset.edit));if(!b)return;row.dataset.enhanced='1';const status=b.active!==false,cells=row.querySelectorAll('td');if(cells[2])cells[2].insertAdjacentHTML('beforeend',`<div style="margin-top:4px;font-size:.75rem"><strong>${status?'Active':'Inactive'}</strong><br>Activated: ${esc(formatDate(b.activation_date))}</div>`);});}
 
 // Business status changes are handled by the core superadmin.js event delegation.
 
