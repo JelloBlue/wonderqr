@@ -26,3 +26,4 @@ function renderFeedback(filter){if(!feedbackList)return;const now=new Date();con
 document.querySelectorAll('.filter-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderFeedback(btn.dataset.filter)}));function wait(ms){return new Promise(r=>setTimeout(r,ms))}function escapeHtml(v){return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\"/g,'&quot;').replace(/'/g,'&#039;')}loadDashboard();
 import './admin-usage.js?v=1';
 import './admin-review-settings.js?v=1';
+import './admin-poster-download.js?v=1';
