@@ -1,0 +1,10 @@
+# Cloudflare Pages safety headers
+# This file is ignored by GitHub Pages and is only interpreted when the
+# repository is deployed through Cloudflare Pages.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+
+/sw.js
+  Cache-Control: no-cache, no-store, must-revalidate
