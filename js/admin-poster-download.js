@@ -42,43 +42,27 @@ async function makePosterCanvas(sizeKey){
     const S=n=>n*scale;
     const M=S(145);
     const dark='#10231c',green='#0d4734',light='#f3f8f5',muted='#66736d',gold='#c69a45';
-
-    // Premium editorial layout: restrained colour, oversized typography, QR as the hero.
     ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
     ctx.fillStyle=dark;ctx.fillRect(0,0,W,S(360));
     ctx.fillStyle=green;ctx.fillRect(0,S(360),W,S(24));
-
-    // Small brand mark
     centerText(ctx,'WONDERQR',W/2,S(145),S(42),800,'#ffffff');
     centerText(ctx,'A SIMPLE WAY TO HEAR FROM YOUR CUSTOMERS',W/2,S(245),S(28),600,'#d9e7e0');
-
-    // Main headline
     centerText(ctx,'HOW WAS YOUR EXPERIENCE?',W/2,S(610),S(78),800,dark);
     centerText(ctx,'Tell us in a few seconds.',W/2,S(705),S(43),500,muted);
-
-    // Business name gets the strongest local identity after the headline.
     const name=String(currentBusiness.business_name||'YOUR BUSINESS').trim();
     ctx.font='800 92px Arial';
     const nameSize=fitText(ctx,name,W-S(330),S(92),S(48),800);
     centerText(ctx,name.toUpperCase(),W/2,S(850),nameSize,800,green);
-
-    // Star / rating cue, without promising any particular outcome.
     centerText(ctx,'★  ★  ★  ★  ★',W/2,S(985),S(68),700,gold);
     centerText(ctx,'Your honest feedback helps us improve.',W/2,S(1065),S(34),500,muted);
-
-    // Hero QR card
     const qrSize=S(1390),qrX=(W-qrSize)/2,qrY=S(1185),cardPad=S(58);
     ctx.shadowColor='rgba(16,35,28,.13)';ctx.shadowBlur=S(42);ctx.shadowOffsetY=S(16);
     ctx.fillStyle='#ffffff';roundRect(ctx,qrX-cardPad,qrY-cardPad,qrSize+cardPad*2,qrSize+cardPad*2,S(38));ctx.fill();
     ctx.shadowColor='transparent';ctx.shadowBlur=0;ctx.shadowOffsetY=0;
     ctx.drawImage(qrImage,qrX,qrY,qrSize,qrSize);
-
-    // Strong scan instruction directly below QR.
     ctx.fillStyle=green;roundRect(ctx,M,S(2705),W-M*2,S(180),S(34));ctx.fill();
     centerText(ctx,'SCAN • RATE • SHARE',W/2,S(2818),S(56),800,'#ffffff');
     centerText(ctx,'Open your phone camera and scan the QR code above.',W/2,S(2948),S(31),500,muted);
-
-    // Minimal footer, intentionally uncluttered for real-world printing.
     ctx.strokeStyle='#dfe8e3';ctx.lineWidth=S(3);ctx.beginPath();ctx.moveTo(M,S(3115));ctx.lineTo(W-M,S(3115));ctx.stroke();
     centerText(ctx,'Thank you for visiting us',W/2,S(3230),S(39),600,dark);
     centerText(ctx,'WonderQR  •  '+currentQr,W/2,S(3305),S(25),500,muted);
@@ -98,11 +82,12 @@ async function downloadLargePoster(){
   finally{if(btn)btn.disabled=false}
 }
 
-function ready(b){
-  currentBusiness=b||currentBusiness;
-  currentQr=$('stat-qr')?.textContent?.trim()||currentQr;
+function ready(detail={}){
+  if(detail.business)currentBusiness=detail.business;
+  if(detail.qrCode)currentQr=String(detail.qrCode).trim();
+  if(!currentQr)currentQr=$('qr-code-label')?.textContent?.trim()||currentQr;
   if(!injectPosterControls())setTimeout(()=>injectPosterControls(),300);
   const btn=$('download-large-poster');if(btn)btn.disabled=!(currentBusiness&&currentQr&&currentQr!=='—');
 }
-window.addEventListener('wonderqr:admin-ready',e=>ready(e.detail?.business));
-ready(null);
+window.addEventListener('wonderqr:admin-ready',e=>ready(e.detail||{}));
+ready();
