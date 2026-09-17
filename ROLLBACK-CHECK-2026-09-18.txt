@@ -1,0 +1,1 @@
+Rollback marker created before CSS-only social media link underline fix. This file is a safety marker; no application files are intentionally changed by this marker commit.
