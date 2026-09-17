@@ -1,24 +1,141 @@
 import { SUPABASE_URL } from './config.js';
-const urlParams=new URLSearchParams(window.location.search);let token=urlParams.get('token')||localStorage.getItem('admin_auth_token');if(token)localStorage.setItem('admin_auth_token',token);
-const $=id=>document.getElementById(id),businessTitleEl=$('business-title'),subtitleEl=$('dashboard-subtitle'),statusEl=$('status-message'),canvas=$('standee-canvas'),hiddenQrDiv=$('qrcode-hidden'),downloadBtn=$('download-standee-btn'),feedbackList=$('feedback-list');let currentQr=null,currentBusiness=null,currentFeedback=[];
-function setStatus(m,t='loading'){if(statusEl){statusEl.textContent=m;statusEl.className=`status ${t}`}}
-async function adminApi(action='dashboard',payload={}){if(!token)throw new Error('No admin token was provided.');const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),12000);try{const r=await fetch(`${SUPABASE_URL}/functions/v1/admin_api`,{method:'POST',headers:{'Content-Type':'application/json','x-admin-token':token},body:JSON.stringify({action,token,...payload}),signal:controller.signal,cache:'no-store'});const x=await r.json().catch(()=>({}));if(!r.ok)throw new Error(x.error||`Admin authorization failed (${r.status})`);return x}catch(e){if(e?.name==='AbortError')throw new Error('Admin server did not respond within 12 seconds. Please refresh and try again.');throw e}finally{clearTimeout(timer)}}
-function getCustomerReviewUrl(qrCode){return `https://jelloblue.github.io/wonderqr/?qr=${encodeURIComponent(qrCode)}`}
-function getShareMessage(business){const name=(business?.business_name||'our business').trim();return `Hi! 👋\n\nWe’d love to hear from you! Please share your experience with ${name} using the link below. ⭐\n\nYour feedback helps us improve and grow. Thank you! 🙏`}
-function setupReviewSharing(qrCode,business){const linkEl=$('share-review-link'),messageEl=$('share-review-message');const waBtn=$('share-whatsapp-btn'),otherBtn=$('share-other-btn'),copyBtn=$('copy-review-link-btn'),qrBtn=$('share-qr-btn');if(!qrCode)return;const targetUrl=getCustomerReviewUrl(qrCode),message=getShareMessage(business);if(linkEl)linkEl.textContent=targetUrl;if(messageEl)messageEl.textContent=`${message}\n\n👉 ${targetUrl}`;[waBtn,otherBtn,copyBtn].forEach(b=>{if(b)b.disabled=false});if(waBtn)waBtn.onclick=()=>{const waText=`${message}\n\n👉 ${targetUrl}`;window.open(`https://wa.me/?text=${encodeURIComponent(waText)}`,'_blank','noopener')};if(otherBtn)otherBtn.onclick=async()=>{try{if(navigator.share){await navigator.share({title:`Review ${business?.business_name||'our business'}`,text:message,url:targetUrl});setStatus('Share options opened.','success')}else{await copyReviewText(message,targetUrl);setStatus('Review message copied. You can paste it into any social app.','success')}}catch(e){if(e?.name!=='AbortError')setStatus('Unable to open sharing options.','error')}};if(copyBtn)copyBtn.onclick=async()=>{try{await navigator.clipboard.writeText(targetUrl);setStatus('WonderQR customer review link copied.','success')}catch{prompt('Copy this customer review link:',targetUrl)}};if(qrBtn)qrBtn.disabled=!canvas?.width||canvas.width<2;if(qrBtn)qrBtn.onclick=shareReviewQr}
-async function copyReviewText(message,targetUrl){const text=`${message}\n\n👉 ${targetUrl}`;try{await navigator.clipboard.writeText(text)}catch{prompt('Copy this review message:',text)}}
-async function shareReviewQr(){if(!canvas||canvas.width<2){setStatus('QR is not ready yet.','error');return}try{const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));if(!blob)throw new Error('QR image unavailable');const file=new File([blob],`WonderQR-${currentQr}.png`,{type:'image/png'});if(navigator.share&&navigator.canShare&&navigator.canShare({files:[file]})){await navigator.share({title:`WonderQR Review QR - ${currentBusiness?.business_name||'Business'}`,text:'Scan this QR code to share your experience with our business.',files:[file]});setStatus('QR sharing options opened.','success');return}if(navigator.share){await navigator.share({title:`WonderQR Review QR - ${currentBusiness?.business_name||'Business'}`,text:'Scan this QR code to share your experience with our business.',url:getCustomerReviewUrl(currentQr)});setStatus('Share options opened.','success');return}const a=document.createElement('a');a.download=`WonderQR-${currentQr}.png`;a.href=canvas.toDataURL('image/png');document.body.appendChild(a);a.click();a.remove();setStatus('QR downloaded. You can post or share it anywhere.','success')}catch(e){if(e?.name!=='AbortError')setStatus('Unable to share QR.','error')}}
-async function loadDashboard(){try{if(!token){setStatus('Access denied. No admin token was provided.','error');if(subtitleEl)subtitleEl.textContent='Open the Admin page using your business token.';return}setStatus('Authenticating...');const result=await adminApi();const business=result.business;if(!business){localStorage.removeItem('admin_auth_token');setStatus('Unauthorized. Invalid business token.','error');return}currentBusiness=business;if(businessTitleEl)businessTitleEl.textContent=business.business_name||'WonderQR Business';const qrRelation=Array.isArray(business.qr_codes)?business.qr_codes[0]:business.qr_codes;const qrCode=qrRelation?.code||business.qr_code||null;currentQr=qrCode;updateSummary(business,qrCode,result.feedback||[]);window.dispatchEvent(new CustomEvent('wonderqr:admin-ready',{detail:{business,qrCode}}));populateEditForm(business);if(qrCode){setStatus(`Connected • QR Code: ${qrCode}`,'success');if(subtitleEl)subtitleEl.textContent=`QR Code: ${qrCode}`;setupReviewSharing(qrCode,business);generateStandee(qrCode,business).catch(e=>console.error('Review board generation failed:',e))}else{setStatus('Business found, but no QR code is assigned.','error')}currentFeedback=(result.feedback||[]).filter(f=>Number(f.rating)>=1&&Number(f.rating)<=4);renderFeedback('all');loadSocialLinks(business)}catch(e){console.error(e);setStatus(e.message||'Unable to load Admin dashboard.','error');if(subtitleEl)subtitleEl.textContent='Please check the Admin link and try again.'}}
-function updateSummary(business,qrCode,feedbacks){let privateCount=0;feedbacks.forEach(f=>{const r=Number(f.rating);if(r>=1&&r<=4)privateCount++});if($('stat-feedback'))$('stat-feedback').textContent=privateCount;if($('stat-qr'))$('stat-qr').textContent=qrCode||'—';if($('feedback-count'))$('feedback-count').textContent=`(${privateCount})`;if($('profile-business'))$('profile-business').textContent=business.business_name||'—';if($('profile-qr'))$('profile-qr').textContent=qrCode||'—';if($('profile-status'))$('profile-status').textContent=business.active===false?'Inactive':'Active'}
-const editableFields=['business_name','owner_name','phone_number','whatsapp_number','instagram_url','youtube_url','facebook_url','justdial_url','zomato_url','swiggy_url','pinterest_url','x_url'];const editFieldIds={business_name:'edit-business-name',owner_name:'edit-owner-name',phone_number:'edit-phone',whatsapp_number:'edit-whatsapp',instagram_url:'edit-instagram',youtube_url:'edit-youtube',facebook_url:'edit-facebook',justdial_url:'edit-justdial',zomato_url:'edit-zomato',swiggy_url:'edit-swiggy',pinterest_url:'edit-pinterest',x_url:'edit-x'};
-function editEl(k){return $(editFieldIds[k])}function populateEditForm(b){editableFields.forEach(k=>{const el=editEl(k);if(el)el.value=b[k]||''});clearEditMessage()}function clearEditMessage(){const el=$('edit-save-message');if(el){el.textContent='';el.className='save-message'}}function setEditMessage(m,t){const el=$('edit-save-message');if(el){el.textContent=m;el.className=`save-message ${t||''}`}}function selectEditCategory(category){document.querySelectorAll('.edit-category-wrap').forEach(w=>w.classList.toggle('active',w.dataset.categoryWrap===category));document.querySelectorAll('.edit-category').forEach(b=>b.classList.toggle('active',b.dataset.category===category));clearEditMessage()}function closeEditPanel(){const panel=$('edit-panel');if(panel)panel.classList.remove('open');document.querySelectorAll('.edit-category-wrap').forEach(w=>w.classList.remove('active'));document.querySelectorAll('.edit-category').forEach(b=>b.classList.remove('active'));clearEditMessage()}function toggleEditPanel(){const panel=$('edit-panel');if(!panel)return;const opening=!panel.classList.contains('open');panel.classList.toggle('open',opening);if(opening){selectEditCategory('business');panel.scrollIntoView({behavior:'smooth',block:'nearest'})}else closeEditPanel()}function validateEdit(data){if(!data.business_name.trim())return'Business name is required.';for(const k of editableFields.filter(x=>x.endsWith('_url'))){const v=data[k].trim();if(!v)continue;try{const u=new URL(v);if(!['http:','https:'].includes(u.protocol))throw 0}catch{return`Please enter a valid ${k.replace('_url','').replace('_',' ')} URL.`}}for(const k of ['phone_number','whatsapp_number']){const v=data[k].trim();if(v&&!/^[+()\d\s.-]{7,30}$/.test(v))return`Please enter a valid ${k==='phone_number'?'phone':'WhatsApp'} number.`}return null}
-async function saveBusiness(){clearEditMessage();const data={};editableFields.forEach(k=>{const el=editEl(k);data[k]=el?el.value.trim():''});const error=validateEdit(data);if(error){setEditMessage(error,'error');return}const btn=$('save-business-btn');if(btn)btn.disabled=true;setEditMessage('Saving...');try{const result=await adminApi('update_profile',data);if(!result.business)throw new Error('Business profile was not returned after saving.');currentBusiness=result.business;if(businessTitleEl)businessTitleEl.textContent=currentBusiness.business_name||'WonderQR Business';updateSummary(currentBusiness,currentQr,currentFeedback);window.dispatchEvent(new CustomEvent('wonderqr:admin-ready',{detail:{business:currentBusiness,qrCode:currentQr}}));loadSocialLinks(currentBusiness);setupReviewSharing(currentQr,currentBusiness);generateStandee(currentQr,currentBusiness).catch(e=>console.error('Review board regeneration failed:',e));populateEditForm(currentBusiness);setEditMessage('Business information updated successfully.','success');setStatus(`Connected • QR Code: ${currentQr}`,'success');setTimeout(closeEditPanel,900)}catch(e){console.error(e);setEditMessage(e.message||'Unable to save business information.','error')}finally{if(btn)btn.disabled=false}}
-$('open-edit-btn')?.addEventListener('click',toggleEditPanel);$('cancel-business-btn')?.addEventListener('click',closeEditPanel);document.querySelectorAll('.edit-category').forEach(btn=>btn.addEventListener('click',()=>selectEditCategory(btn.dataset.category)));$('save-business-btn')?.addEventListener('click',saveBusiness);
-function loadSocialLinks(b){const el=$('social-links');if(!el)return;const links=[];if(b.instagram_url)links.push(`<a href="${safeUrl(b.instagram_url)}" target="_blank" rel="noopener">Instagram</a>`);if(b.youtube_url)links.push(`<a href="${safeUrl(b.youtube_url)}" target="_blank" rel="noopener">YouTube</a>`);if(b.facebook_url)links.push(`<a href="${safeUrl(b.facebook_url)}" target="_blank" rel="noopener">Facebook</a>`);if(b.whatsapp_number)links.push(`<a href="https://wa.me/${String(b.whatsapp_number).replace(/\D/g,'')}" target="_blank" rel="noopener">WhatsApp</a>`);if(b.phone_number)links.push(`<a href="tel:${String(b.phone_number).replace(/[^+\d]/g,'')}">Call</a>`);if(b.justdial_url)links.push(`<a href="${safeUrl(b.justdial_url)}" target="_blank" rel="noopener">Justdial</a>`);if(b.zomato_url)links.push(`<a href="${safeUrl(b.zomato_url)}" target="_blank" rel="noopener">Zomato</a>`);if(b.swiggy_url)links.push(`<a href="${safeUrl(b.swiggy_url)}" target="_blank" rel="noopener">Swiggy</a>`);if(b.pinterest_url)links.push(`<a href="${safeUrl(b.pinterest_url)}" target="_blank" rel="noopener">Pinterest</a>`);if(b.x_url)links.push(`<a href="${safeUrl(b.x_url)}" target="_blank" rel="noopener">X</a>`);el.innerHTML=links.length?links.join(''):'<span class="hint">No social or contact links added.</span>'}function safeUrl(v){try{const u=new URL(v);return ['http:','https:'].includes(u.protocol)?u.href:'#'}catch{return '#'}}
-async function generateStandee(qrCode,business){if(!canvas||!hiddenQrDiv)return;if(typeof QRCode==='undefined'){setStatus('QR generator library failed to load.','error');return}const ctx=canvas.getContext('2d'),W=1200,H=1800;canvas.width=W;canvas.height=H;const targetUrl=getCustomerReviewUrl(qrCode);hiddenQrDiv.innerHTML='';new QRCode(hiddenQrDiv,{text:targetUrl,width:600,height:600,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});await wait(300);const qrCanvas=hiddenQrDiv.querySelector('canvas'),qrImg=hiddenQrDiv.querySelector('img'),qrSource=qrCanvas?qrCanvas.toDataURL('image/png'):(qrImg?.src||null);if(!qrSource){setStatus('QR image could not be generated.','error');return}const qrImage=new Image();qrImage.onload=()=>{ctx.clearRect(0,0,W,H);ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.fillStyle='#0d4734';ctx.fillRect(0,0,W,250);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='bold 72px Arial';ctx.fillText('SCAN TO REVIEW',W/2,145);ctx.fillStyle='#0d4734';ctx.font='bold 54px Arial';drawWrappedText(ctx,(business?.business_name||'Your Business').trim(),W/2,330,1000,62,70);ctx.fillStyle='#374151';ctx.font='34px Arial';ctx.fillText('We value your feedback',W/2,455);const qrSize=620,qrX=(W-qrSize)/2,qrY=535;ctx.fillStyle='#fff';ctx.strokeStyle='#d1d5db';ctx.lineWidth=8;ctx.fillRect(qrX-30,qrY-30,qrSize+60,qrSize+60);ctx.strokeRect(qrX-30,qrY-30,qrSize+60,qrSize+60);ctx.drawImage(qrImage,qrX,qrY,qrSize,qrSize);ctx.fillStyle='#111827';ctx.font='bold 38px Arial';ctx.fillText('Point your phone camera at the QR code',W/2,1280);ctx.fillStyle='#6b7280';ctx.font='30px Arial';ctx.fillText('Scan • Review • Support our business',W/2,1340);const links=[];if(business?.instagram_url)links.push('Instagram');if(business?.youtube_url)links.push('YouTube');if(business?.facebook_url)links.push('Facebook');if(business?.whatsapp_number)links.push('WhatsApp');if(business?.phone_number)links.push('Call');if(business?.justdial_url)links.push('Justdial');if(business?.zomato_url)links.push('Zomato');if(business?.swiggy_url)links.push('Swiggy');if(links.length){ctx.fillStyle='#0d4734';ctx.font='bold 30px Arial';ctx.fillText(links.slice(0,5).join('   •   '),W/2,1460)}ctx.fillStyle='#0d4734';ctx.font='bold 34px Arial';ctx.fillText('WonderQR',W/2,1660);ctx.fillStyle='#6b7280';ctx.font='24px Arial';ctx.fillText(qrCode,W/2,1710);enableQrActions(targetUrl);if($('share-qr-btn'))$('share-qr-btn').disabled=false;setStatus(`Review board ready • ${qrCode}`,'success')};qrImage.onerror=()=>setStatus('QR image could not be loaded.','error');qrImage.src=qrSource}
-function enableQrActions(targetUrl){const ids=['download-standee-btn','download-board-2','download-qr-btn','download-qr-2','test-qr-btn','copy-link-btn'];ids.forEach(id=>{if($(id))$(id).disabled=false});const downloadBoard=()=>{try{const a=document.createElement('a');a.download=`Review-Board-${currentQr}-4x6.png`;a.href=canvas.toDataURL('image/png',1);document.body.appendChild(a);a.click();a.remove()}catch{alert('Unable to download the review board.')}};['download-standee-btn','download-board-2'].forEach(id=>{if($(id))$(id).onclick=downloadBoard});const downloadQr=()=>{const c=hiddenQrDiv.querySelector('canvas');if(!c){alert('QR is not ready yet.');return}const a=document.createElement('a');a.download=`WonderQR-${currentQr}.png`;a.href=c.toDataURL('image/png');document.body.appendChild(a);a.click();a.remove()};['download-qr-btn','download-qr-2'].forEach(id=>{if($(id))$(id).onclick=downloadQr});if($('test-qr-btn'))$('test-qr-btn').onclick=()=>window.open(targetUrl,'_blank','noopener');if($('copy-link-btn'))$('copy-link-btn').onclick=async()=>{try{await navigator.clipboard.writeText(targetUrl);setStatus('Customer review link copied.','success')}catch{prompt('Copy this customer review link:',targetUrl)}}}
-function drawWrappedText(ctx,text,x,y,maxWidth,lineHeight,fontSize){const words=String(text||'').split(/\s+/),lines=[];let line='';ctx.font=`bold ${fontSize}px Arial`;for(const word of words){const test=line?`${line} ${word}`:word;if(ctx.measureText(test).width>maxWidth&&line){lines.push(line);line=word}else line=test}if(line)lines.push(line);lines.slice(0,3).forEach((l,i)=>ctx.fillText(l,x,y+i*lineHeight))}
-function renderFeedback(filter='all'){if(!feedbackList)return;const now=new Date();const list=currentFeedback.filter(f=>filter==='today'?new Date(f.created_at).toDateString()===now.toDateString():true);if(!list.length){feedbackList.innerHTML='<div class="empty-message">No private feedback received.</div>';return}feedbackList.innerHTML=list.map(f=>{const r=Math.max(1,Math.min(5,Number(f.rating)||0));const date=new Date(f.created_at).toLocaleString();const name=f.customer_name?`<div><strong>${escapeHtml(f.customer_name)}</strong></div>`:'';const phone=f.customer_phone?`<div class="feedback-date">${escapeHtml(f.customer_phone)}</div>`:'';return `<div class="feedback-card"><div class="feedback-stars">${'★'.repeat(r)}${'☆'.repeat(5-r)}</div><div class="feedback-date">${date}</div>${name}${phone}<div class="feedback-msg">${escapeHtml(f.message||'')}</div></div>`}).join('')}
-function escapeHtml(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
-document.querySelectorAll('.filter-btn').forEach(btn=>btn.addEventListener('click',()=>{document.querySelectorAll('.filter-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');renderFeedback(btn.dataset.filter||'all')}));
-loadDashboard();
+
+const params=new URLSearchParams(location.search);
+let token=params.get('token')||localStorage.getItem('admin_auth_token')||'';
+if(token)localStorage.setItem('admin_auth_token',token);
+const $=id=>document.getElementById(id);
+const status=$('status-message');
+const title=$('business-title');
+const subtitle=$('dashboard-subtitle');
+const canvas=$('standee-canvas');
+const hiddenQr=$('qrcode-hidden');
+let business=null,qrCode=null,feedback=[];
+
+function setStatus(text,type='loading'){if(status){status.textContent=text;status.className=`status ${type}`}}
+function customerUrl(){return `https://jelloblue.github.io/wonderqr/?qr=${encodeURIComponent(qrCode||'')}`}
+function safeUrl(v){try{const u=new URL(v);return ['http:','https:'].includes(u.protocol)?u.href:'#'}catch{return '#'}}
+function clean(v){return String(v??'').trim()}
+
+async function api(action,payload={}){
+  if(!token)throw new Error('No admin access token was provided. Please reopen the Admin link.');
+  const controller=new AbortController();
+  const timer=setTimeout(()=>controller.abort(),10000);
+  try{
+    const response=await fetch(`${SUPABASE_URL}/functions/v1/admin_api`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-admin-token':token,'Authorization':`Bearer ${token}`},
+      body:JSON.stringify({action,token,...payload}),
+      cache:'no-store',
+      signal:controller.signal
+    });
+    const text=await response.text();
+    let data={};try{data=text?JSON.parse(text):{}}catch{data={error:text||'Invalid server response'}}
+    if(!response.ok)throw new Error(data.error||`Admin service returned ${response.status}`);
+    return data;
+  }catch(e){
+    if(e?.name==='AbortError')throw new Error('Business authentication timed out. The server did not respond within 10 seconds.');
+    throw e;
+  }finally{clearTimeout(timer)}
+}
+
+function renderFeedback(){
+  const list=$('feedback-list');if(!list)return;
+  const privateItems=feedback.filter(f=>{const r=Number(f.rating);return r>=1&&r<=4});
+  if($('feedback-count'))$('feedback-count').textContent=`(${privateItems.length})`;
+  if(!privateItems.length){list.innerHTML='<div class="empty-message">No private feedback received.</div>';return}
+  list.innerHTML=privateItems.map(f=>{
+    const stars='★'.repeat(Number(f.rating))+'☆'.repeat(Math.max(0,5-Number(f.rating)));
+    const date=f.created_at?new Date(f.created_at).toLocaleString('en-IN',{dateStyle:'medium',timeStyle:'short'}):'';
+    return `<article class="feedback-card"><div class="feedback-stars">${stars}</div><div class="feedback-date">${date}</div><div class="feedback-msg">${escapeHtml(f.message||'')}</div>${f.customer_name?`<div class="hint">Customer: ${escapeHtml(f.customer_name)}</div>`:''}</article>`;
+  }).join('');
+}
+function escapeHtml(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+
+function populateProfile(){
+  if($('profile-business'))$('profile-business').textContent=business?.business_name||'—';
+  if($('profile-qr'))$('profile-qr').textContent=qrCode||'—';
+  if($('profile-status'))$('profile-status').textContent=business?.active===false?'Inactive':'Active';
+  if($('edit-business-name'))$('edit-business-name').value=business?.business_name||'';
+  if($('edit-owner-name'))$('edit-owner-name').value=business?.owner_name||'';
+  if($('edit-phone'))$('edit-phone').value=business?.phone_number||'';
+  if($('edit-whatsapp'))$('edit-whatsapp').value=business?.whatsapp_number||'';
+  if($('edit-instagram'))$('edit-instagram').value=business?.instagram_url||'';
+  if($('edit-youtube'))$('edit-youtube').value=business?.youtube_url||'';
+  if($('edit-facebook'))$('edit-facebook').value=business?.facebook_url||'';
+  if($('edit-pinterest'))$('edit-pinterest').value=business?.pinterest_url||'';
+  if($('edit-x'))$('edit-x').value=business?.x_url||'';
+  loadSocialLinks();
+}
+function loadSocialLinks(){
+  const el=$('social-links');if(!el||!business)return;
+  const links=[];
+  if(business.instagram_url)links.push(`<a href="${safeUrl(business.instagram_url)}" target="_blank" rel="noopener">Instagram</a>`);
+  if(business.youtube_url)links.push(`<a href="${safeUrl(business.youtube_url)}" target="_blank" rel="noopener">YouTube</a>`);
+  if(business.facebook_url)links.push(`<a href="${safeUrl(business.facebook_url)}" target="_blank" rel="noopener">Facebook</a>`);
+  if(business.whatsapp_number)links.push(`<a href="https://wa.me/${String(business.whatsapp_number).replace(/\D/g,'')}" target="_blank" rel="noopener">WhatsApp</a>`);
+  if(business.phone_number)links.push(`<a href="tel:${String(business.phone_number).replace(/[^+\d]/g,'')}">Call</a>`);
+  if(business.justdial_url)links.push(`<a href="${safeUrl(business.justdial_url)}" target="_blank" rel="noopener">Justdial</a>`);
+  if(business.pinterest_url)links.push(`<a href="${safeUrl(business.pinterest_url)}" target="_blank" rel="noopener">Pinterest</a>`);
+  if(business.x_url)links.push(`<a href="${safeUrl(business.x_url)}" target="_blank" rel="noopener">X</a>`);
+  el.innerHTML=links.length?links.join(''):'<span class="hint">No social or contact links added.</span>';
+}
+
+function setupSharing(){
+  const link=$('share-review-link'),msg=$('share-review-message');if(!qrCode)return;
+  const url=customerUrl(),name=business?.business_name||'our business';
+  const message=`Hi! 👋\n\nWe’d love to hear from you! Please share your experience with ${name} using the link below. ⭐\n\nYour feedback helps us improve and grow. Thank you! 🙏`;
+  if(link)link.textContent=url;if(msg)msg.textContent=`${message}\n\n👉 ${url}`;
+  const wa=$('share-whatsapp-btn'),other=$('share-other-btn'),copy=$('copy-review-link-btn'),shareQr=$('share-qr-btn');
+  if(wa){wa.disabled=false;wa.onclick=()=>window.open(`https://wa.me/?text=${encodeURIComponent(message+'\n\n👉 '+url)}`,'_blank','noopener')}
+  if(other){other.disabled=false;other.onclick=async()=>{try{if(navigator.share)await navigator.share({title:`Review ${name}`,text:message,url});else await navigator.clipboard.writeText(message+'\n\n👉 '+url);setStatus('Share options opened.','success')}catch(e){if(e?.name!=='AbortError')setStatus('Unable to share.','error')}}}
+  if(copy){copy.disabled=false;copy.onclick=async()=>{try{await navigator.clipboard.writeText(url);setStatus('Review link copied.','success')}catch{prompt('Copy this review link:',url)}}}
+  if(shareQr){shareQr.disabled=true;shareQr.onclick=async()=>{if(!canvas||canvas.width<2)return;try{const blob=await new Promise(r=>canvas.toBlob(r,'image/png'));const file=new File([blob],`WonderQR-${qrCode}.png`,{type:'image/png'});if(navigator.share&&navigator.canShare?.({files:[file]}))await navigator.share({title:`WonderQR Review QR - ${name}`,files:[file]});else{const a=document.createElement('a');a.download=file.name;a.href=canvas.toDataURL('image/png');a.click()}}catch(e){if(e?.name!=='AbortError')setStatus('Unable to share QR.','error')}}}
+}
+
+function generateStandee(){
+  if(!canvas||!hiddenQr||!qrCode||typeof QRCode==='undefined')return;
+  try{
+    hiddenQr.innerHTML='';new QRCode(hiddenQr,{text:customerUrl(),width:600,height:600,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.H});
+    setTimeout(()=>{
+      const source=hiddenQr.querySelector('canvas')?.toDataURL('image/png')||hiddenQr.querySelector('img')?.src;if(!source)return;
+      const img=new Image();img.onload=()=>{
+        const W=1200,H=1800,ctx=canvas.getContext('2d');canvas.width=W;canvas.height=H;ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);ctx.fillStyle='#0d4734';ctx.fillRect(0,0,W,250);ctx.fillStyle='#fff';ctx.textAlign='center';ctx.font='bold 72px Arial';ctx.fillText('SCAN TO REVIEW',W/2,145);ctx.fillStyle='#0d4734';ctx.font='bold 54px Arial';ctx.fillText((business?.business_name||'Your Business').slice(0,30),W/2,350);ctx.fillStyle='#374151';ctx.font='34px Arial';ctx.fillText('We value your feedback',W/2,455);const s=620,x=(W-s)/2,y=535;ctx.drawImage(img,x,y,s,s);ctx.fillStyle='#111827';ctx.font='bold 38px Arial';ctx.fillText('Point your phone camera at the QR code',W/2,1280);ctx.fillStyle='#6b7280';ctx.font='30px Arial';ctx.fillText('Scan • Review • Support our business',W/2,1340);ctx.fillStyle='#0d4734';ctx.font='bold 34px Arial';ctx.fillText('WonderQR',W/2,1660);ctx.fillStyle='#6b7280';ctx.font='24px Arial';ctx.fillText(qrCode,W/2,1710);if($('test-qr-btn'))$('test-qr-btn').disabled=false;if($('copy-link-btn'))$('copy-link-btn').disabled=false;if($('download-qr-btn'))$('download-qr-btn').disabled=false;if($('download-standee-btn'))$('download-standee-btn').disabled=false;if($('share-qr-btn'))$('share-qr-btn').disabled=false;};img.src=source;
+    },150);
+  }catch(e){console.error('QR generation',e)}
+}
+function setupQrActions(){
+  $('test-qr-btn')?.addEventListener('click',()=>window.open(customerUrl(),'_blank','noopener'));
+  $('copy-link-btn')?.addEventListener('click',async()=>{try{await navigator.clipboard.writeText(customerUrl());setStatus('Review link copied.','success')}catch{prompt('Copy this review link:',customerUrl())}});
+  $('download-qr-btn')?.addEventListener('click',()=>{const a=document.createElement('a');a.download=`WonderQR-${qrCode}.png`;a.href=canvas.toDataURL('image/png');a.click()});
+  $('download-standee-btn')?.addEventListener('click',()=>{const a=document.createElement('a');a.download=`Review-Board-${qrCode}-4x6.png`;a.href=canvas.toDataURL('image/png');a.click()});
+}
+
+async function saveProfile(){
+  const fields=['business_name','owner_name','phone_number','whatsapp_number','instagram_url','youtube_url','facebook_url','justdial_url','pinterest_url','x_url'];const ids={business_name:'edit-business-name',owner_name:'edit-owner-name',phone_number:'edit-phone',whatsapp_number:'edit-whatsapp',instagram_url:'edit-instagram',youtube_url:'edit-youtube',facebook_url:'edit-facebook',justdial_url:'edit-justdial',pinterest_url:'edit-pinterest',x_url:'edit-x'};const data={};for(const k of fields){const el=$(ids[k]);if(el)data[k]=clean(el.value)}if(!data.business_name){$('edit-save-message').textContent='Business name is required.';return}const btn=$('save-business-btn');if(btn)btn.disabled=true;try{const r=await api('update_profile',data);business=r.business||business;populateProfile();setupSharing();generateStandee();if($('edit-save-message'))$('edit-save-message').textContent='Business information updated successfully.';setStatus(`Connected • QR Code: ${qrCode}`,'success')}catch(e){if($('edit-save-message'))$('edit-save-message').textContent=e.message||'Unable to save.'}finally{if(btn)btn.disabled=false}}
+function setupEdit(){
+  $('open-edit-btn')?.addEventListener('click',()=>{$('edit-panel')?.classList.add('open');document.querySelectorAll('.edit-category-wrap').forEach(x=>x.classList.remove('active'));document.querySelector('[data-category-wrap="business"]')?.classList.add('active')});
+  $('cancel-business-btn')?.addEventListener('click',()=>{$('edit-panel')?.classList.remove('open')});
+  document.querySelectorAll('.edit-category').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.edit-category-wrap').forEach(x=>x.classList.toggle('active',x.dataset.categoryWrap===b.dataset.category))}));
+  $('save-business-btn')?.addEventListener('click',saveProfile);
+}
+
+async function load(){
+  if(!token){setStatus('Access denied. No admin token was provided.','error');return}
+  try{
+    setStatus('Authenticating business…');
+    const auth=await api('auth');
+    if(!auth.business)throw new Error('Business authentication returned no business.');
+    business=auth.business;
+    const rel=Array.isArray(business.qr_codes)?business.qr_codes[0]:business.qr_codes;
+    qrCode=rel?.code||business.qr_code||null;
+    title.textContent=business.business_name||'WonderQR Business';
+    subtitle.textContent=qrCode?`QR Code: ${qrCode}`:'Business account connected';
+    populateProfile();setupSharing();setupQrActions();generateStandee();
+    setStatus('Business authenticated. Loading feedback…','success');
+    window.dispatchEvent(new CustomEvent('wonderqr:admin-ready',{detail:{business,qrCode}}));
+    try{const r=await api('feedback');feedback=r.feedback||[];renderFeedback()}catch(e){console.error(e);setStatus('Business authenticated, but feedback could not be loaded.','error')}
+    if(qrCode)setStatus(`Connected • QR Code: ${qrCode}`,'success');
+  }catch(e){console.error(e);setStatus(e.message||'Unable to authenticate business.','error');if(subtitle)subtitle.textContent='Please check the Admin link and try again.'}
+}
+setupEdit();
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load);else load();
