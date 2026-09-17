@@ -11,8 +11,8 @@ async function lookupBusiness(attempt=0){
   throw new Error(data?.error||`QR lookup failed (${response.status})`);
 }
 async function init(){
-  setText('badge-scan','Rate Us');setText('biz-subtitle','How was your experience?');setText('feedback-prompt','Tell us how we can improve.');setText('fb-comments-label','Your Feedback *');setText('fb-comments','');
-  const textarea=document.getElementById('fb-comments');if(textarea){textarea.placeholder='What could we improve?';textarea.rows=5;textarea.style.minHeight='120px';textarea.style.resize='vertical';}
+  setText('badge-scan','Rate Us');setText('biz-subtitle','How was your experience?');setText('feedback-prompt','Sorry to hear that. How can we improve?');setText('fb-comments-label','Feedback *');setText('fb-comments','');
+  const textarea=document.getElementById('fb-comments');if(textarea){textarea.placeholder='What went wrong?';textarea.rows=5;textarea.style.minHeight='120px';textarea.style.resize='vertical';}
   const submit=document.querySelector('#feedback-form button[type="submit"]');if(submit)submit.textContent='Send Feedback';
   if(!qrCode){setText('biz-name','Invalid Link');setText('biz-subtitle','No QR code specified.');return;}
   try{const data=await lookupBusiness();const business=data?.business;if(!business){setText('biz-name','WonderQR');setText('biz-subtitle','This QR code is not active yet.');return;}if(business.active!==true){setText('biz-name','WonderQR');setText('biz-subtitle','This QR code is not active.');return;}currentBusiness=business;setText('biz-name',currentBusiness.business_name||'');setupSocialLinks();setupStars();setupAdminButton();}catch(error){console.error('QR/business lookup failed:',error);setText('biz-name','Unable to load QR code');setText('biz-subtitle','Please try again.');}}
