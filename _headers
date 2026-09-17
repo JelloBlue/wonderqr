@@ -11,3 +11,9 @@
 
 /js/review.js
   Cache-Control: no-cache, no-store, must-revalidate
+
+/js/admin.js
+  Cache-Control: no-cache, no-store, must-revalidate
+
+/js/admin-poster-download.js
+  Cache-Control: no-cache, no-store, must-revalidate
