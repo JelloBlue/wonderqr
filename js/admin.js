@@ -27,3 +27,4 @@ document.querySelectorAll('.filter-btn').forEach(btn=>btn.addEventListener('clic
 import './admin-usage.js?v=1';
 import './admin-review-settings.js?v=1';
 import './admin-poster-download.js?v=4';
+import './admin-mobile-ui.js?v=1';
