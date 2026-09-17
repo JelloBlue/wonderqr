@@ -8,7 +8,18 @@ function initAdminMobileUi(){
   removeLegacy();
   import('./admin-notifications-ui.js?v=10').catch(()=>{});
   const selectors=['#business-settings-section','#business-info-section','#security-section','#review-filter-settings','#admin-usage-card','.grid > .card:nth-child(2)'];
-  const apply=()=>{removeLegacy();selectors.forEach(sel=>document.querySelectorAll(sel).forEach(section=>{if(section.classList.contains('notification-static')||section.id==='notification-inbox-card')return;section.classList.add('admin-collapsible');const h=section.querySelector(':scope > h2');if(!h||h.dataset.collapsibleBound)return;h.dataset.collapsibleBound='1';h.setAttribute('role','button');h.setAttribute('tabindex','0');const toggle=()=>section.classList.toggle('is-collapsed');h.addEventListener('click',toggle);h.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}})}));const share=document.getElementById('share-review-section');const page=document.querySelector('.page');if(share&&page&&share.parentElement===page)page.appendChild(share);if(matchMedia('(max-width:760px)').matches)document.querySelectorAll('.admin-collapsible').forEach(section=>{if(!section.dataset.mobileDefault){section.dataset.mobileDefault='1';if(section.id!=='review-filter-settings'&&section.querySelector('#standee-canvas')===null)section.classList.add('is-collapsed');if(section.id==='review-filter-settings')section.classList.add('is-collapsed')}})};
+  const apply=()=>{removeLegacy();selectors.forEach(sel=>document.querySelectorAll(sel).forEach(section=>{if(section.classList.contains('notification-static')||section.id==='notification-inbox-card')return;section.classList.add('admin-collapsible');const h=section.querySelector(':scope > h2');if(!h||h.dataset.collapsibleBound)return;h.dataset.collapsibleBound='1';h.setAttribute('role','button');h.setAttribute('tabindex','0');const toggle=()=>section.classList.toggle('is-collapsed');h.addEventListener('click',toggle);h.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}})}));
+    const share=document.getElementById('share-review-section');
+    const page=document.querySelector('.page');
+    const qrHidden=document.getElementById('qrcode-hidden');
+    const toast=document.getElementById('toast');
+    if(share&&page&&share.parentElement===page){
+      if(qrHidden&&qrHidden.parentElement===page)page.insertBefore(share,qrHidden);
+      else if(toast&&toast.parentElement===page)page.insertBefore(share,toast);
+      else page.appendChild(share);
+    }
+    if(matchMedia('(max-width:760px)').matches)document.querySelectorAll('.admin-collapsible').forEach(section=>{if(!section.dataset.mobileDefault){section.dataset.mobileDefault='1';if(section.id!=='review-filter-settings'&&section.querySelector('#standee-canvas')===null)section.classList.add('is-collapsed');if(section.id==='review-filter-settings')section.classList.add('is-collapsed')}})
+  };
   apply();new MutationObserver(apply).observe(document.body,{childList:true,subtree:true});
 }
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',initAdminMobileUi);else initAdminMobileUi();
