@@ -167,4 +167,9 @@ async function load() {
   }
 }
 
-setupEdit();setupPinChange();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load);else load();
+function bootAdmin(){
+  try{setupEdit();}catch(e){console.error('Admin edit setup failed',e);}
+  try{setupPinChange();}catch(e){console.error('Admin PIN setup failed',e);}
+  try{load();}catch(e){console.error('Admin boot failed',e);setStatus(e?.message||'Unable to start Admin.','error');}
+}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',bootAdmin,{once:true});else bootAdmin();
