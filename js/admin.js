@@ -29,11 +29,10 @@ async function api(action = 'auth', payload = {}) {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin_api`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
-        'x-admin-token': token
+        'Content-Type': 'text/plain;charset=UTF-8',
+        'Accept': 'application/json'
       },
-      body: JSON.stringify({ action, ...payload }),
+      body: JSON.stringify({ action, token, ...payload }),
       cache: 'no-store',
       signal: controller.signal
     });
