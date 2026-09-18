@@ -6,7 +6,6 @@ function initAdminMobileUi(){
   `;document.head.appendChild(style);
   const removeLegacy=()=>{document.getElementById('notification-inbox-card')?.remove();document.getElementById('admin-notifications-card')?.remove()};
   removeLegacy();
-  import('./admin-notifications-ui.js?v=13').catch(()=>{});
   const selectors=['#business-settings-section','#business-info-section','#security-section','#review-filter-settings','#admin-usage-card','.grid > .card','#share-review-section'];
   const apply=()=>{removeLegacy();selectors.forEach(sel=>document.querySelectorAll(sel).forEach(section=>{if(section.classList.contains('notification-static')||section.id==='notification-inbox-card')return;section.classList.add('admin-collapsible');const h=section.querySelector(':scope > h2');if(!h||h.dataset.collapsibleBound)return;h.dataset.collapsibleBound='1';h.setAttribute('role','button');h.setAttribute('tabindex','0');h.setAttribute('aria-expanded','false');section.classList.add('is-collapsed');const toggle=()=>{const collapsed=section.classList.toggle('is-collapsed');h.setAttribute('aria-expanded',String(!collapsed))};h.addEventListener('click',toggle);h.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();toggle()}})}));
     const share=document.getElementById('share-review-section');
