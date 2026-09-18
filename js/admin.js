@@ -23,22 +23,32 @@ function safeUrl(v) { try { const u = new URL(v); return ['http:','https:'].incl
 /* Keep the admin token in the protected request body to avoid CORS preflight on mobile browsers. */
 async function api(action = 'auth', payload = {}) {
   if (!token) throw new Error('No admin access token was provided. Please reopen the Admin link.');
-  const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 12000);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 12000);
   try {
-    let response = await fetch(`${SUPABASE_URL}/functions/v1/admin_api`, {method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({action,token,...payload}),cache:'no-store',signal:controller.signal});
-    /* Mobile/browser fallback: retry once with the explicit admin-token header if the body transport is rejected. */
-    if (!response.ok && (response.status === 400 || response.status === 401 || response.status === 403 || response.status === 500)) {
-      response = await fetch(`${SUPABASE_URL}/functions/v1/admin_api`, {method:'POST',headers:{'Content-Type':'application/json','x-admin-token':token},body:JSON.stringify({action,...payload}),cache:'no-store',signal:controller.signal});
-    }
-    const text = await response.text(); let data = {};
-    try { data = text ? JSON.parse(text) : {}; } catch { data = {error:text || 'Invalid server response'}; }
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/admin_api`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'x-admin-token': token
+      },
+      body: JSON.stringify({ action, ...payload }),
+      cache: 'no-store',
+      signal: controller.signal
+    });
+    const text = await response.text();
+    let data = {};
+    try { data = text ? JSON.parse(text) : {}; } catch { data = { error: text || 'Invalid server response' }; }
     if (!response.ok) throw new Error(data.error || `Admin service returned HTTP ${response.status}`);
     return data;
   } catch (e) {
     if (e?.name === 'AbortError') throw new Error('Business authentication timed out after 12 seconds.');
     if (e instanceof TypeError) throw new Error('Could not reach the WonderQR server. Please check your internet connection and try again.');
     throw e;
-  } finally { clearTimeout(timer); }
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 function renderFeedback() {
