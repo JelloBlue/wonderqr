@@ -1,4 +1,4 @@
-import { SUPABASE_URL } from './config.js';
+const SUPABASE_URL = 'https://smzwucttkyuqzazozcat.supabase.co';
 
 const params = new URLSearchParams(window.location.search);
 let token = (params.get('token') || localStorage.getItem('admin_auth_token') || '').trim();
