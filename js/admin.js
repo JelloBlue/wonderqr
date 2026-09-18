@@ -26,13 +26,15 @@ async function api(action = 'auth', payload = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 20000);
   try {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/admin_api?token=${encodeURIComponent(token)}&v=25`, {
-      method: 'POST',
-      headers: {
+    const isAuth = action === 'auth';
+    const url = `${SUPABASE_URL}/functions/v1/admin_api?token=${encodeURIComponent(token)}&v=26`;
+    const response = await fetch(url, {
+      method: isAuth ? 'GET' : 'POST',
+      headers: isAuth ? { 'Accept': 'application/json' } : {
         'Content-Type': 'text/plain;charset=UTF-8',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({ action, ...payload }),
+      ...(isAuth ? {} : { body: JSON.stringify({ action, ...payload }) }),
       cache: 'no-store',
       signal: controller.signal
     });
