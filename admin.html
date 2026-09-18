@@ -29,24 +29,34 @@
   const subtitle=document.getElementById('dashboard-subtitle');
   const p=new URLSearchParams(location.search);
   const token=(p.get('token')||localStorage.getItem('admin_auth_token')||'').trim();
-  if(token) localStorage.setItem('admin_auth_token',token);
-  if(!token){if(status){status.textContent='Access denied. No admin token was provided.';status.className='status error';}return;}
-  if(status){status.textContent='Connecting to WonderQR…';status.className='status loading';}
-  fetch('https://smzwucttkyuqzazozcat.supabase.co/functions/v1/admin_api?token='+encodeURIComponent(token)+'&v=26',{method:'GET',cache:'no-store',headers:{Accept:'application/json'}})
-    .then(function(r){return r.text().then(function(t){var d={};try{d=JSON.parse(t)}catch(e){throw new Error('Invalid server response')};if(!r.ok)throw new Error(d.error||('HTTP '+r.status));return d;})})
+  const show=(msg,type)=>{if(status){status.textContent=msg;status.className='status '+type;}};
+  if(token) try{localStorage.setItem('admin_auth_token',token)}catch(e){}
+  if(!token){show('Access denied. No admin token was provided.','error');return;}
+  show('Connecting to WonderQR…','loading');
+  const url='https://smzwucttkyuqzazozcat.supabase.co/functions/v1/admin_api?token='+encodeURIComponent(token)+'&v=26&_ts='+Date.now();
+  try{
+    if(navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))).catch(()=>{});
+  }catch(e){}
+  fetch(url,{method:'GET',mode:'cors',cache:'no-store',credentials:'omit',headers:{Accept:'application/json'}})
+    .then(async function(r){
+      const t=await r.text();
+      let d={}; try{d=t?JSON.parse(t):{};}catch(e){throw new Error('Server returned non-JSON response (HTTP '+r.status+').');}
+      if(!r.ok) throw new Error(d.error||('HTTP '+r.status));
+      return d;
+    })
     .then(function(d){
       if(!d.business)throw new Error('Business authentication returned no business.');
       window.__wonderQRAuth=d.business;
       if(title)title.textContent=d.business.business_name||'WonderQR Business';
-      var q=Array.isArray(d.business.qr_codes)?d.business.qr_codes[0]:d.business.qr_codes;
-      var code=(q&&q.code)||d.business.qr_code||'';
+      const q=Array.isArray(d.business.qr_codes)?d.business.qr_codes[0]:d.business.qr_codes;
+      const code=(q&&q.code)||d.business.qr_code||'';
       if(subtitle)subtitle.textContent=code?'QR Code: '+code:'Business account connected';
-      if(status){status.textContent=code?'Connected • QR Code: '+code:'Business authenticated.';status.className='status success';}
-      window.dispatchEvent(new CustomEvent('wonderqr:bootstrap-ready',{detail:{business:d.business,qrCode:code}}));
+      show(code?'Connected • QR Code: '+code:'Business authenticated.','success');
+      window.dispatchEvent(new CustomEvent('wonderQR:bootstrap-ready',{detail:{business:d.business,qrCode:code}}));
     })
     .catch(function(e){
       console.error('WonderQR inline auth failed',e);
-      if(status){status.textContent=e.message||'Unable to authenticate business.';status.className='status error';}
+      show('Connecting to WonderQR failed: '+(e&&e.message?e.message:String(e)),'error');
     });
 })();
 </script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
