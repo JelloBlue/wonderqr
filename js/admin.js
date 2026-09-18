@@ -20,7 +20,7 @@ function clean(v) { return String(v ?? '').trim(); }
 function escapeHtml(v) { return String(v ?? '').replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;',"'":'&#039;'}[c])); }
 function safeUrl(v) { try { const u = new URL(v); return ['http:','https:'].includes(u.protocol) ? u.href : '#'; } catch { return '#'; } }
 
-/* Keep the admin token in the protected request body to avoid CORS preflight on mobile browsers. */
+/* Send the token in the JSON body using a simple text/plain request to avoid mobile CORS preflight issues. */
 async function api(action = 'auth', payload = {}) {
   if (!token) throw new Error('No admin access token was provided. Please reopen the Admin link.');
   const controller = new AbortController();
