@@ -141,7 +141,30 @@ async function saveProfile() {
 
 async function load() {
   if(!token){setStatus('Access denied. No admin token was provided.','error');return;}
-  try{setStatus('Authenticating business…');const auth=await api('auth');if(!auth?.business)throw new Error('Business authentication returned no business.');business=auth.business;const rel=Array.isArray(business.qr_codes)?business.qr_codes[0]:business.qr_codes;qrCode=rel?.code||business.qr_code||null;if(titleEl)titleEl.textContent=business.business_name||'WonderQR Business';if(subtitleEl)subtitleEl.textContent=qrCode?`QR Code: ${qrCode}`:'Business account connected';populateProfile();setupSharing();setupQrActions();generateStandee();setStatus('Business authenticated. Loading feedback…','success');window.dispatchEvent(new CustomEvent('wonderqr:admin-ready',{detail:{business,qrCode}}));try{const r=await api('feedback');feedback=r.feedback||[];renderFeedback();}catch(e){console.error('Feedback load failed',e);setStatus('Business authenticated, but feedback could not be loaded.','error');}if(qrCode)setStatus(`Connected • QR Code: ${qrCode}`,'success');}catch(e){console.error('Admin authentication failed',e);setStatus(e.message||'Unable to authenticate business.','error');if(subtitleEl)subtitleEl.textContent='Please check the Admin link and try again.';}
+  try{
+    setStatus('Authenticating business…');
+    const auth=await api('auth');
+    if(!auth?.business)throw new Error('Business authentication returned no business.');
+    business=auth.business;
+    const rel=Array.isArray(business.qr_codes)?business.qr_codes[0]:business.qr_codes;
+    qrCode=rel?.code||business.qr_code||null;
+    if(titleEl)titleEl.textContent=business.business_name||'WonderQR Business';
+    if(subtitleEl)subtitleEl.textContent=qrCode?('QR Code: '+qrCode):'Business account connected';
+    setStatus(qrCode?('Connected • QR Code: '+qrCode):'Business authenticated.','success');
+    try{populateProfile();}catch(e){console.error('Profile setup failed',e);}
+    try{setupSharing();}catch(e){console.error('Sharing setup failed',e);}
+    try{setupQrActions();}catch(e){console.error('QR action setup failed',e);}
+    try{generateStandee();}catch(e){console.error('Standee generation failed',e);}
+    try{window.dispatchEvent(new CustomEvent('wonderqr:admin-ready',{detail:{business,qrCode}}));}catch(e){console.error('Admin ready event failed',e);}
+    setStatus('Connected • Loading feedback…','success');
+    try{
+      const r=await api('feedback'); feedback=r.feedback||[]; renderFeedback();
+      if(qrCode)setStatus('Connected • QR Code: '+qrCode,'success');
+    }catch(e){console.error('Feedback load failed',e);setStatus('Connected, but feedback could not be loaded.','error');}
+  }catch(e){
+    console.error('Admin authentication failed',e);setStatus(e.message||'Unable to authenticate business.','error');
+    if(subtitleEl)subtitleEl.textContent='Please check the Admin link and try again.';
+  }
 }
 
 setupEdit();setupPinChange();if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',load);else load();
