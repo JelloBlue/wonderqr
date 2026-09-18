@@ -22,47 +22,10 @@
 <section id="share-review-section" class="card section"><h2>📣 Get More Reviews</h2><div class="share-link-box"><div id="share-review-link" class="share-link-preview">Loading...</div><div id="share-review-message" class="share-message-preview">Loading...</div><div class="share-actions"><button id="share-whatsapp-btn" class="btn primary" disabled>🟢 WhatsApp</button><button id="share-other-btn" class="btn primary" disabled>📱 Share</button><button id="copy-review-link-btn" class="btn secondary" disabled>📋 Copy Link</button><button id="share-qr-btn" class="btn secondary" disabled>🔲 Share QR</button></div></div></section>
 <div id="qrcode-hidden" style="position:absolute;left:-99999px;top:-99999px;width:600px;height:600px;overflow:hidden"></div>
 </main>
-<script>
-(function(){
-  const status=document.getElementById('status-message');
-  const title=document.getElementById('business-title');
-  const subtitle=document.getElementById('dashboard-subtitle');
-  const p=new URLSearchParams(location.search);
-  const token=(p.get('token')||localStorage.getItem('admin_auth_token')||'').trim();
-  const show=(msg,type)=>{if(status){status.textContent=msg;status.className='status '+type;}};
-  if(token) try{localStorage.setItem('admin_auth_token',token)}catch(e){}
-  if(!token){show('Access denied. No admin token was provided.','error');return;}
-  show('Connecting to WonderQR…','loading');
-  const url='https://smzwucttkyuqzazozcat.supabase.co/functions/v1/admin_api?token='+encodeURIComponent(token)+'&v=26&_ts='+Date.now();
-  try{
-    if(navigator.serviceWorker) navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))).catch(()=>{});
-  }catch(e){}
-  fetch(url,{method:'GET',mode:'cors',cache:'no-store',credentials:'omit',headers:{Accept:'application/json'}})
-    .then(async function(r){
-      const t=await r.text();
-      let d={}; try{d=t?JSON.parse(t):{};}catch(e){throw new Error('Server returned non-JSON response (HTTP '+r.status+').');}
-      if(!r.ok) throw new Error(d.error||('HTTP '+r.status));
-      return d;
-    })
-    .then(function(d){
-      if(!d.business)throw new Error('Business authentication returned no business.');
-      window.__wonderQRAuth=d.business;
-      if(title)title.textContent=d.business.business_name||'WonderQR Business';
-      const q=Array.isArray(d.business.qr_codes)?d.business.qr_codes[0]:d.business.qr_codes;
-      const code=(q&&q.code)||d.business.qr_code||'';
-      if(subtitle)subtitle.textContent=code?'QR Code: '+code:'Business account connected';
-      show(code?'Connected • QR Code: '+code:'Business authenticated.','success');
-      window.dispatchEvent(new CustomEvent('wonderQR:bootstrap-ready',{detail:{business:d.business,qrCode:code}}));
-    })
-    .catch(function(e){
-      console.error('WonderQR inline auth failed',e);
-      show('Connecting to WonderQR failed: '+(e&&e.message?e.message:String(e)),'error');
-    });
-})();
-</script>\n<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="js/admin.js?v=32"></script>
-<script src="js/pwa-install.js?v=4"></script>
-<script type="module" src="js/admin-notifications-ui.js?v=13"></script>
-<script type="module" src="js/admin-usage.js?v=2"></script>
-<script type="module" src="js/admin-mobile-ui.js?v=7"></script>
+\n<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="js/admin.js?v=33"></script>
+<script src="js/pwa-install.js?v=5"></script>
+<script type="module" src="js/admin-notifications-ui.js?v=14"></script>
+<script type="module" src="js/admin-usage.js?v=3"></script>
+<script type="module" src="js/admin-mobile-ui.js?v=8"></script>
 </body></html>
