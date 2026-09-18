@@ -26,13 +26,13 @@ async function api(action = 'auth', payload = {}) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 12000);
   try {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/admin_api`, {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/admin_api?token=${encodeURIComponent(token)}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain;charset=UTF-8',
         'Accept': 'application/json'
       },
-      body: JSON.stringify({ action, token, ...payload }),
+      body: JSON.stringify({ action, ...payload }),
       cache: 'no-store',
       signal: controller.signal
     });
