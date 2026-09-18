@@ -13,9 +13,9 @@ function initAdminMobileUi(){
     const qrHidden=document.getElementById('qrcode-hidden');
     const toast=document.getElementById('toast');
     if(share&&page&&share.parentElement===page){
-      if(qrHidden&&qrHidden.parentElement===page)page.insertBefore(share,qrHidden);
-      else if(toast&&toast.parentElement===page)page.insertBefore(share,toast);
-      else page.appendChild(share);
+      if(qrHidden&&qrHidden.parentElement===page){if(share.nextElementSibling!==qrHidden)page.insertBefore(share,qrHidden);
+      }else if(toast&&toast.parentElement===page){if(share.nextElementSibling!==toast)page.insertBefore(share,toast);
+      }else if(share.parentElement===page&&page.lastElementChild!==share){page.appendChild(share);}
     }
   };
   apply();new MutationObserver(apply).observe(document.body,{childList:true,subtree:true});
