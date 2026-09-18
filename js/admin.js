@@ -25,7 +25,11 @@ async function api(action = 'auth', payload = {}) {
   if (!token) throw new Error('No admin access token was provided. Please reopen the Admin link.');
   const controller = new AbortController(); const timer = setTimeout(() => controller.abort(), 12000);
   try {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/admin_api`, {method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({action,token,...payload}),cache:'no-store',signal:controller.signal});
+    let response = await fetch(`${SUPABASE_URL}/functions/v1/admin_api`, {method:'POST',headers:{'Content-Type':'text/plain;charset=UTF-8'},body:JSON.stringify({action,token,...payload}),cache:'no-store',signal:controller.signal});
+    /* Mobile/browser fallback: retry once with the explicit admin-token header if the body transport is rejected. */
+    if (!response.ok && (response.status === 400 || response.status === 401 || response.status === 403 || response.status === 500)) {
+      response = await fetch(`${SUPABASE_URL}/functions/v1/admin_api`, {method:'POST',headers:{'Content-Type':'application/json','x-admin-token':token},body:JSON.stringify({action,...payload}),cache:'no-store',signal:controller.signal});
+    }
     const text = await response.text(); let data = {};
     try { data = text ? JSON.parse(text) : {}; } catch { data = {error:text || 'Invalid server response'}; }
     if (!response.ok) throw new Error(data.error || `Admin service returned HTTP ${response.status}`);
