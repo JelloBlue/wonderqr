@@ -24,7 +24,7 @@ function safeUrl(v) { try { const u = new URL(v); return ['http:','https:'].incl
 async function api(action = 'auth', payload = {}) {
   if (!token) throw new Error('No admin access token was provided. Please reopen the Admin link.');
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 12000);
+  const timer = setTimeout(() => controller.abort(), 20000);
   try {
     const response = await fetch(`${SUPABASE_URL}/functions/v1/admin_api?token=${encodeURIComponent(token)}`, {
       method: 'POST',
@@ -42,7 +42,7 @@ async function api(action = 'auth', payload = {}) {
     if (!response.ok) throw new Error(data.error || `Admin service returned HTTP ${response.status}`);
     return data;
   } catch (e) {
-    if (e?.name === 'AbortError') throw new Error('Business authentication timed out after 12 seconds.');
+    if (e?.name === 'AbortError') throw new Error('Business authentication timed out after 20 seconds.');
     if (e instanceof TypeError) throw new Error('Could not reach the WonderQR server. Please check your internet connection and try again.');
     throw e;
   } finally {
